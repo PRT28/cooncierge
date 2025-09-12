@@ -2,7 +2,7 @@ import Filter from "../../../components/Filter";
 import SummaryCards from "../../../components/SummaryCards";
 import Table from "../../../components/Table";
 
-const LimitlessSalesPage = () => {
+const LimitlessBookingsPage = () => {
   const columns = [
     "#ID",
     "Lead Pax",
@@ -176,4 +176,4 @@ const LimitlessSalesPage = () => {
   );
 };
 
-export default LimitlessSalesPage;
+export default LimitlessBookingsPage;
