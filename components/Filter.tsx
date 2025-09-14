@@ -151,7 +151,7 @@ const Filter: React.FC<FilterProps> = ({
         </div>
 
         {/* Owner Filter */}
-        <div className="text-left">
+        {/* <div className="text-left">
           <label className="block text-gray-700 mb-2" htmlFor="owner">
             Owner (Primary)
           </label>
@@ -169,10 +169,10 @@ const Filter: React.FC<FilterProps> = ({
               <MdOutlineKeyboardArrowDown size={22} />
             </span>
           </div>
-        </div>
+        </div> */}
 
         {/* Search */}
-        <div className="text-left">
+        <div className="text-left col-span-2">
           <label className="block text-gray-700 mb-2" htmlFor="search">
             Search
           </label>
