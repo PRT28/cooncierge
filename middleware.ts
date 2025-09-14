@@ -6,15 +6,15 @@ export function middleware(req: NextRequest) {
 
   const { pathname } = req.nextUrl;
 
- if (!token && pathname.startsWith("/dashboard")) {
- const loginUrl = new URL("/login", req.url);
-  return NextResponse.redirect(loginUrl);
- }
+//  if (!token && pathname.startsWith("/dashboard")) {
+//  const loginUrl = new URL("/login", req.url);
+//   return NextResponse.redirect(loginUrl);
+//  }
 
-  if (token && (pathname === "/login" || pathname === "/register")) {
-    const dashboardUrl = new URL("/dashboard", req.url);
-    return NextResponse.redirect(dashboardUrl);
-  }
+//   if (token && (pathname === "/login" || pathname === "/register")) {
+//     const dashboardUrl = new URL("/dashboard", req.url);
+//     return NextResponse.redirect(dashboardUrl);
+//   }
 
   return NextResponse.next();
 }

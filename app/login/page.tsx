@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import Image from "next/image";
 import { IoMdArrowBack } from "react-icons/io";
 
@@ -12,12 +12,14 @@ export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Handle OTP input change
-  const handleOtpChange = (value: string, index: number) => {
+  // Optimized OTP input change handler
+  const handleOtpChange = useCallback((value: string, index: number) => {
     if (/^\d*$/.test(value)) {
-      const newOtp = [...otp];
-      newOtp[index] = value;
-      setOtp(newOtp);
+      setOtp(prev => {
+        const newOtp = [...prev];
+        newOtp[index] = value;
+        return newOtp;
+      });
 
       // Auto-focus next field
       if (value && index < otp.length - 1) {
@@ -27,22 +29,22 @@ export default function SignIn() {
         nextInput?.focus();
       }
     }
-  };
+  }, [otp.length]);
 
-  const handleForgotPassword = () => {
+  const handleForgotPassword = useCallback(() => {
     setMode("forgot");
-  };
+  }, []);
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     setMode("otp");
-  };
+  }, []);
 
-  const handleSuccess = async (): Promise<void> => {
+  const handleSuccess = useCallback(async (): Promise<void> => {
     // fake API call
     await new Promise((res) => setTimeout(res, 1000));
     setSuccess(true);
-  };
+  }, []);
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#E8F5F1] flex items-center justify-center">
@@ -102,41 +104,50 @@ export default function SignIn() {
         />
       </div>
 
-      {/* Background illustrations */}
+      {/* Background illustrations - Optimized for performance */}
       <Image
         src="/login/wallet.png"
-        alt="Wallet"
+        alt="Wallet illustration"
         width={400}
         height={400}
         priority
+        sizes="(max-width: 768px) 200px, 400px"
         className="absolute top-10 left-[180px] w-[400px] rotate-[-5deg]"
       />
       <Image
         src="/login/booking.png"
-        alt="Booking"
+        alt="Booking illustration"
         width={492}
         height={492}
+        loading="lazy"
+        sizes="(max-width: 768px) 246px, 492px"
         className="absolute bottom-6 left-30 w-[492px] rotate-[-6deg]"
       />
       <Image
         src="/login/world.png"
-        alt="World"
+        alt="World illustration"
         width={332}
         height={332}
+        loading="lazy"
+        sizes="(max-width: 768px) 166px, 332px"
         className="absolute -top-5 right-[40%] w-[332px] rotate-[5deg]"
       />
       <Image
         src="/login/traveller.png"
-        alt="Traveler"
+        alt="Traveler illustration"
         width={320}
         height={320}
+        loading="lazy"
+        sizes="(max-width: 768px) 160px, 320px"
         className="absolute -bottom-1 right-[30%] w-[320px]"
       />
       <Image
         src="/login/group.png"
-        alt="Group"
+        alt="Group illustration"
         width={480}
         height={500}
+        loading="lazy"
+        sizes="(max-width: 768px) 240px, 480px"
         className="absolute mt-100 ml-305 w-[480.47px] h-[500.29px] -translate-y-1/2"
       />
 
@@ -298,7 +309,7 @@ export default function SignIn() {
                     />
                   </div>
                   <p className="text-sm text-center text-black mb-4 mt-4">
-                    Don't worry! Just enter your email and we'll notify your
+                    Don&apos;t worry! Just enter your email and we&apos;ll notify your
                     admin to reset your password.
                   </p>
                   <div className="flex justify-end">

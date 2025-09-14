@@ -1,0 +1,512 @@
+"use client";
+
+import React, { createContext, useContext, useReducer, useCallback, useMemo, useEffect } from "react";
+import { BookingApiService, validateGeneralInfo, validateServiceInfo } from "@/services/bookingApi";
+
+// Type definitions
+interface Service {
+  id: string;
+  title: string;
+  image: string;
+  category: 'travel' | 'accommodation' | 'transport' | 'activity';
+  description?: string;
+}
+
+interface GeneralInfo {
+  customer: string;
+  vendor: string;
+  adults: number;
+  children: number;
+  infants: number;
+  traveller1: string;
+  traveller2: string;
+  traveller3: string;
+  bookingOwner: string;
+  remarks: string;
+}
+
+interface ServiceInfo {
+  serviceType: string;
+  destination: string;
+  departureDate: string;
+  returnDate: string;
+  budget: number;
+  preferences: string;
+  specialRequests: string;
+  priority: 'low' | 'medium' | 'high';
+  flexibility: boolean;
+}
+
+interface BookingState {
+  // UI State
+  isModalOpen: boolean;
+  isSidesheetOpen: boolean;
+  isLoading: boolean;
+  
+  // Form Data
+  selectedService: Service | null;
+  generalInfo: Partial<GeneralInfo>;
+  serviceInfo: Partial<ServiceInfo>;
+  
+  // Form Progress
+  currentStep: 'service-selection' | 'general-info' | 'service-info' | 'review';
+  completedSteps: string[];
+  
+  // Validation
+  errors: Record<string, string>;
+  
+  // API State
+  isSubmitting: boolean;
+  submitError: string | null;
+  submitSuccess: boolean;
+}
+
+type BookingAction =
+  | { type: 'OPEN_MODAL' }
+  | { type: 'CLOSE_MODAL' }
+  | { type: 'OPEN_SIDESHEET' }
+  | { type: 'CLOSE_SIDESHEET' }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SELECT_SERVICE'; payload: Service }
+  | { type: 'UPDATE_GENERAL_INFO'; payload: Partial<GeneralInfo> }
+  | { type: 'UPDATE_SERVICE_INFO'; payload: Partial<ServiceInfo> }
+  | { type: 'SET_CURRENT_STEP'; payload: BookingState['currentStep'] }
+  | { type: 'COMPLETE_STEP'; payload: string }
+  | { type: 'SET_ERRORS'; payload: Record<string, string> }
+  | { type: 'CLEAR_ERRORS' }
+  | { type: 'SET_SUBMITTING'; payload: boolean }
+  | { type: 'SET_SUBMIT_ERROR'; payload: string | null }
+  | { type: 'SET_SUBMIT_SUCCESS'; payload: boolean }
+  | { type: 'RESET_BOOKING' }
+  | { type: 'LOAD_FROM_STORAGE'; payload: Partial<BookingState> };
+
+interface BookingContextType {
+  state: BookingState;
+  
+  // UI Actions
+  openModal: () => void;
+  closeModal: () => void;
+  openSidesheet: () => void;
+  closeSidesheet: () => void;
+  setLoading: (loading: boolean) => void;
+  
+  // Form Actions
+  selectService: (service: Service) => void;
+  updateGeneralInfo: (info: Partial<GeneralInfo>) => void;
+  updateServiceInfo: (info: Partial<ServiceInfo>) => void;
+  setCurrentStep: (step: BookingState['currentStep']) => void;
+  completeStep: (step: string) => void;
+  
+  // Validation Actions
+  setErrors: (errors: Record<string, string>) => void;
+  clearErrors: () => void;
+  
+  // API Actions
+  submitBooking: () => Promise<void>;
+  saveDraft: () => Promise<void>;
+  validateCustomer: (customerId: string) => Promise<boolean>;
+  validateVendor: (vendorId: string) => Promise<boolean>;
+  resetBooking: () => void;
+  
+  // Computed Properties
+  isFormValid: boolean;
+  canProceedToNext: boolean;
+  totalSteps: number;
+  currentStepIndex: number;
+  progressPercentage: number;
+}
+
+// Initial state
+const initialState: BookingState = {
+  isModalOpen: false,
+  isSidesheetOpen: false,
+  isLoading: false,
+  selectedService: null,
+  generalInfo: {},
+  serviceInfo: {},
+  currentStep: 'service-selection',
+  completedSteps: [],
+  errors: {},
+  isSubmitting: false,
+  submitError: null,
+  submitSuccess: false,
+};
+
+// Reducer
+const bookingReducer = (state: BookingState, action: BookingAction): BookingState => {
+  switch (action.type) {
+    case 'OPEN_MODAL':
+      return { ...state, isModalOpen: true };
+    
+    case 'CLOSE_MODAL':
+      return { ...state, isModalOpen: false };
+    
+    case 'OPEN_SIDESHEET':
+      return { ...state, isSidesheetOpen: true };
+    
+    case 'CLOSE_SIDESHEET':
+      return { ...state, isSidesheetOpen: false };
+    
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+    
+    case 'SELECT_SERVICE':
+      return {
+        ...state,
+        selectedService: action.payload,
+        currentStep: 'general-info',
+        isModalOpen: false,
+        isSidesheetOpen: true,
+      };
+    
+    case 'UPDATE_GENERAL_INFO':
+      return {
+        ...state,
+        generalInfo: { ...state.generalInfo, ...action.payload },
+      };
+    
+    case 'UPDATE_SERVICE_INFO':
+      return {
+        ...state,
+        serviceInfo: { ...state.serviceInfo, ...action.payload },
+      };
+    
+    case 'SET_CURRENT_STEP':
+      return { ...state, currentStep: action.payload };
+    
+    case 'COMPLETE_STEP':
+      return {
+        ...state,
+        completedSteps: [...new Set([...state.completedSteps, action.payload])],
+      };
+    
+    case 'SET_ERRORS':
+      return { ...state, errors: action.payload };
+    
+    case 'CLEAR_ERRORS':
+      return { ...state, errors: {} };
+    
+    case 'SET_SUBMITTING':
+      return { ...state, isSubmitting: action.payload };
+    
+    case 'SET_SUBMIT_ERROR':
+      return { ...state, submitError: action.payload, isSubmitting: false };
+    
+    case 'SET_SUBMIT_SUCCESS':
+      return { ...state, submitSuccess: action.payload, isSubmitting: false };
+    
+    case 'RESET_BOOKING':
+      return { ...initialState };
+    
+    case 'LOAD_FROM_STORAGE':
+      return { ...state, ...action.payload };
+    
+    default:
+      return state;
+  }
+};
+
+// Context
+const BookingContext = createContext<BookingContextType | undefined>(undefined);
+
+// Storage key
+const STORAGE_KEY = 'coonicerge_booking_state';
+
+// Provider component
+export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [state, dispatch] = useReducer(bookingReducer, initialState);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsedState = JSON.parse(stored);
+          dispatch({ type: 'LOAD_FROM_STORAGE', payload: parsedState });
+        }
+      } catch (error) {
+        console.error('Error loading booking state from storage:', error);
+      }
+    }
+  }, []);
+
+  // Save to localStorage when state changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stateToSave = {
+          selectedService: state.selectedService,
+          generalInfo: state.generalInfo,
+          serviceInfo: state.serviceInfo,
+          currentStep: state.currentStep,
+          completedSteps: state.completedSteps,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      } catch (error) {
+        console.error('Error saving booking state to storage:', error);
+      }
+    }
+  }, [state.selectedService, state.generalInfo, state.serviceInfo, state.currentStep, state.completedSteps]);
+
+  // Action creators
+  const openModal = useCallback(() => dispatch({ type: 'OPEN_MODAL' }), []);
+  const closeModal = useCallback(() => dispatch({ type: 'CLOSE_MODAL' }), []);
+  const openSidesheet = useCallback(() => dispatch({ type: 'OPEN_SIDESHEET' }), []);
+  const closeSidesheet = useCallback(() => dispatch({ type: 'CLOSE_SIDESHEET' }), []);
+  const setLoading = useCallback((loading: boolean) => dispatch({ type: 'SET_LOADING', payload: loading }), []);
+
+  const selectService = useCallback((service: Service) => {
+    dispatch({ type: 'SELECT_SERVICE', payload: service });
+  }, []);
+
+  const updateGeneralInfo = useCallback((info: Partial<GeneralInfo>) => {
+    dispatch({ type: 'UPDATE_GENERAL_INFO', payload: info });
+  }, []);
+
+  const updateServiceInfo = useCallback((info: Partial<ServiceInfo>) => {
+    dispatch({ type: 'UPDATE_SERVICE_INFO', payload: info });
+  }, []);
+
+  const setCurrentStep = useCallback((step: BookingState['currentStep']) => {
+    dispatch({ type: 'SET_CURRENT_STEP', payload: step });
+  }, []);
+
+  const completeStep = useCallback((step: string) => {
+    dispatch({ type: 'COMPLETE_STEP', payload: step });
+  }, []);
+
+  const setErrors = useCallback((errors: Record<string, string>) => {
+    dispatch({ type: 'SET_ERRORS', payload: errors });
+  }, []);
+
+  const clearErrors = useCallback(() => dispatch({ type: 'CLEAR_ERRORS' }), []);
+
+  const resetBooking = useCallback(() => {
+    dispatch({ type: 'RESET_BOOKING' });
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, []);
+
+  // Submit booking function with comprehensive validation and API integration
+  const submitBooking = useCallback(async () => {
+    dispatch({ type: 'SET_SUBMITTING', payload: true });
+    dispatch({ type: 'SET_SUBMIT_ERROR', payload: null });
+
+    try {
+      // Validate general info
+      const generalInfoErrors = validateGeneralInfo(state.generalInfo);
+      const serviceInfoErrors = validateServiceInfo(state.serviceInfo, state.selectedService);
+
+      const allErrors = { ...generalInfoErrors, ...serviceInfoErrors };
+
+      if (Object.keys(allErrors).length > 0) {
+        dispatch({ type: 'SET_ERRORS', payload: allErrors });
+        throw new Error('Please fix the validation errors before submitting');
+      }
+
+      // Ensure we have a selected service
+      if (!state.selectedService) {
+        throw new Error('Please select a service');
+      }
+
+      // Prepare booking data
+      const bookingData = {
+        service: state.selectedService,
+        generalInfo: state.generalInfo as GeneralInfo,
+        serviceInfo: state.serviceInfo as ServiceInfo,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Submit to API
+      const response = await BookingApiService.createQuotation(bookingData);
+
+      if (!response.success) {
+        if (response.errors) {
+          dispatch({ type: 'SET_ERRORS', payload: response.errors });
+        }
+        throw new Error(response.message || 'Failed to create booking');
+      }
+
+      console.log('Booking submitted successfully:', response.data);
+
+      dispatch({ type: 'SET_SUBMIT_SUCCESS', payload: true });
+
+      // Reset form after successful submission
+      setTimeout(() => {
+        resetBooking();
+      }, 3000);
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while submitting the booking';
+      dispatch({ type: 'SET_SUBMIT_ERROR', payload: errorMessage });
+    }
+  }, [state.selectedService, state.generalInfo, state.serviceInfo, resetBooking]);
+
+  // Save draft function
+  const saveDraft = useCallback(async () => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+
+    try {
+      const draftData = {
+        selectedService: state.selectedService,
+        generalInfo: state.generalInfo,
+        serviceInfo: state.serviceInfo,
+        currentStep: state.currentStep,
+        timestamp: new Date().toISOString(),
+      };
+
+      const response = await BookingApiService.saveDraft(draftData);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to save draft');
+      }
+
+      console.log('Draft saved successfully');
+
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save draft';
+      dispatch({ type: 'SET_SUBMIT_ERROR', payload: errorMessage });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, [state.selectedService, state.generalInfo, state.serviceInfo, state.currentStep]);
+
+  // Validate customer function
+  const validateCustomer = useCallback(async (customerId: string): Promise<boolean> => {
+    try {
+      const response = await BookingApiService.validateCustomer(customerId);
+      return response.success;
+    } catch (error) {
+      console.error('Error validating customer:', error);
+      return false;
+    }
+  }, []);
+
+  // Validate vendor function
+  const validateVendor = useCallback(async (vendorId: string): Promise<boolean> => {
+    try {
+      const response = await BookingApiService.validateVendor(vendorId);
+      return response.success;
+    } catch (error) {
+      console.error('Error validating vendor:', error);
+      return false;
+    }
+  }, []);
+
+  // Computed properties
+  const steps = ['service-selection', 'general-info', 'service-info', 'review'];
+  const totalSteps = steps.length;
+  const currentStepIndex = steps.indexOf(state.currentStep);
+  const progressPercentage = ((currentStepIndex + 1) / totalSteps) * 100;
+
+  const isFormValid = useMemo(() => {
+    const hasService = !!state.selectedService;
+    const hasRequiredGeneralInfo = !!(
+      state.generalInfo.customer &&
+      state.generalInfo.vendor &&
+      state.generalInfo.traveller1 &&
+      state.generalInfo.bookingOwner
+    );
+    const hasRequiredServiceInfo = !!(
+      state.serviceInfo.destination &&
+      state.serviceInfo.departureDate &&
+      state.serviceInfo.budget
+    );
+
+    return hasService && hasRequiredGeneralInfo && hasRequiredServiceInfo;
+  }, [state.selectedService, state.generalInfo, state.serviceInfo]);
+
+  const canProceedToNext = useMemo(() => {
+    switch (state.currentStep) {
+      case 'service-selection':
+        return !!state.selectedService;
+      case 'general-info':
+        return !!(
+          state.generalInfo.customer &&
+          state.generalInfo.vendor &&
+          state.generalInfo.traveller1 &&
+          state.generalInfo.bookingOwner
+        );
+      case 'service-info':
+        return !!(
+          state.serviceInfo.destination &&
+          state.serviceInfo.departureDate &&
+          state.serviceInfo.budget
+        );
+      case 'review':
+        return isFormValid;
+      default:
+        return false;
+    }
+  }, [state.currentStep, state.selectedService, state.generalInfo, state.serviceInfo, isFormValid]);
+
+  const contextValue: BookingContextType = useMemo(() => ({
+    state,
+    openModal,
+    closeModal,
+    openSidesheet,
+    closeSidesheet,
+    setLoading,
+    selectService,
+    updateGeneralInfo,
+    updateServiceInfo,
+    setCurrentStep,
+    completeStep,
+    setErrors,
+    clearErrors,
+    submitBooking,
+    saveDraft,
+    validateCustomer,
+    validateVendor,
+    resetBooking,
+    isFormValid,
+    canProceedToNext,
+    totalSteps,
+    currentStepIndex,
+    progressPercentage,
+  }), [
+    state,
+    openModal,
+    closeModal,
+    openSidesheet,
+    closeSidesheet,
+    setLoading,
+    selectService,
+    updateGeneralInfo,
+    updateServiceInfo,
+    setCurrentStep,
+    completeStep,
+    setErrors,
+    clearErrors,
+    submitBooking,
+    saveDraft,
+    validateCustomer,
+    validateVendor,
+    resetBooking,
+    isFormValid,
+    canProceedToNext,
+    totalSteps,
+    currentStepIndex,
+    progressPercentage,
+  ]);
+
+  return (
+    <BookingContext.Provider value={contextValue}>
+      {children}
+    </BookingContext.Provider>
+  );
+};
+
+// Hook to use booking context
+export const useBooking = (): BookingContextType => {
+  const context = useContext(BookingContext);
+  if (context === undefined) {
+    throw new Error('useBooking must be used within a BookingProvider');
+  }
+  return context;
+};
+
+export default BookingContext;
