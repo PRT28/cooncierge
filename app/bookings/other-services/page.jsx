@@ -3,7 +3,7 @@ import BookingFormModal from "../../../components/BookingFormModal";
 import Filter from "../../../components/Filter";
 import SummaryCards from "../../../components/SummaryCards";
 import Table from "../../../components/Table";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import BookingFormSidesheet from "./../../../components/BookingFormSidesheet";
 
 const OSBookingsPage = () => {
@@ -27,148 +27,145 @@ const OSBookingsPage = () => {
     "Tasks",
   ];
 
-  const data = [
-    [
-      <td key="id-001" className="px-4 py-3">
-        #001
-      </td>,
-      <td key="lead-001" className="px-4 py-3">
-        Anand Mishra
-      </td>,
-      <td key="date-001" className="px-4 py-3">
-        12-09-2025
-      </td>,
-      <td key="service-001" className="px-4 py-3">
-        ✈️ Flight
-      </td>,
-      <td key="status-001" className="px-4 py-3">
-        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
-          Successful
-        </span>
-      </td>,
-      <td key="amount-001" className="px-4 py-3">
-        ₹ 24,580
-      </td>,
-      <td key="voucher-001" className="px-4 py-3">
-        📄
-      </td>,
-      <td key="tasks-001" className="px-4 py-3">
-        3
-      </td>,
+  // Memoized table data with proper typing
+  const tableData = useMemo(
+    () => [
+      {
+        id: "#001",
+        leadPax: "Anand Mishra",
+        travelDate: "12-09-2025",
+        service: "✈️ Flight",
+        bookingStatus: "Successful",
+        amount: "₹ 24,580",
+        voucher: "📄",
+        tasks: 3,
+      },
+      {
+        id: "#002",
+        leadPax: "Priya Sharma",
+        travelDate: "15-09-2025",
+        service: "🏨 Hotel",
+        bookingStatus: "Pending",
+        amount: "₹ 18,200",
+        voucher: "📄",
+        tasks: 2,
+      },
+      {
+        id: "#003",
+        leadPax: "Rajesh Kumar",
+        travelDate: "20-09-2025",
+        service: "🚗 Car Rental",
+        bookingStatus: "Successful",
+        amount: "₹ 12,500",
+        voucher: "📄",
+        tasks: 1,
+      },
+      {
+        id: "#004",
+        leadPax: "Sneha Patel",
+        travelDate: "25-09-2025",
+        service: "🎫 Package",
+        bookingStatus: "Failed",
+        amount: "₹ 45,000",
+        voucher: "📄",
+        tasks: 5,
+      },
+      {
+        id: "#005",
+        leadPax: "Vikram Singh",
+        travelDate: "30-09-2025",
+        service: "✈️ Flight",
+        bookingStatus: "Successful",
+        amount: "₹ 32,100",
+        voucher: "📄",
+        tasks: 2,
+      },
     ],
-    [
-      <td key="id-002" className="px-4 py-3">
-        #002
-      </td>,
-      <td key="lead-002" className="px-4 py-3">
-        Sumit Jha
-      </td>,
-      <td key="date-002" className="px-4 py-3">
-        15-09-2025
-      </td>,
-      <td key="service-002" className="px-4 py-3">
-        🏨 Accommodation
-      </td>,
-      <td key="status-002" className="px-4 py-3">
-        <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700">
-          In Progress
-        </span>
-      </td>,
-      <td key="amount-002" className="px-4 py-3">
-        ₹ 24,580
-      </td>,
-      <td key="voucher-002" className="px-4 py-3">
-        📄
-      </td>,
-      <td key="tasks-002" className="px-4 py-3">
-        3
-      </td>,
-    ],
-    [
-      <td key="id-003" className="px-4 py-3">
-        #003
-      </td>,
-      <td key="lead-003" className="px-4 py-3">
-        Deepanshu
-      </td>,
-      <td key="date-003" className="px-4 py-3">
-        18-09-2025
-      </td>,
-      <td key="service-003" className="px-4 py-3">
-        🚢 Transportation (Maritime)
-      </td>,
-      <td key="status-003" className="px-4 py-3">
-        <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">
-          Failed
-        </span>
-      </td>,
-      <td key="amount-003" className="px-4 py-3">
-        ₹ 24,580
-      </td>,
-      <td key="voucher-003" className="px-4 py-3">
-        📄
-      </td>,
-      <td key="tasks-003" className="px-4 py-3">
-        3
-      </td>,
-    ],
-    [
-      <td key="id-004" className="px-4 py-3">
-        #004
-      </td>,
-      <td key="lead-004" className="px-4 py-3">
-        Zaheer
-      </td>,
-      <td key="date-004" className="px-4 py-3">
-        20-09-2025
-      </td>,
-      <td key="service-004" className="px-4 py-3">
-        🚌 Transportation (Land)
-      </td>,
-      <td key="status-004" className="px-4 py-3">
-        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
-          Successful
-        </span>
-      </td>,
-      <td key="amount-004" className="px-4 py-3">
-        ₹ 24,580
-      </td>,
-      <td key="voucher-004" className="px-4 py-3">
-        📄
-      </td>,
-      <td key="tasks-004" className="px-4 py-3">
-        1
-      </td>,
-    ],
-    [
-      <td key="id-005" className="px-4 py-3">
-        #005
-      </td>,
-      <td key="lead-005" className="px-4 py-3">
-        Gaurav Kapoor
-      </td>,
-      <td key="date-005" className="px-4 py-3">
-        22-09-2025
-      </td>,
-      <td key="service-005" className="px-4 py-3">
-        ✈️ Flight
-      </td>,
-      <td key="status-005" className="px-4 py-3">
-        <span className="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-700">
-          On Hold
-        </span>
-      </td>,
-      <td key="amount-005" className="px-4 py-3">
-        ₹ 24,580
-      </td>,
-      <td key="voucher-005" className="px-4 py-3">
-        📄
-      </td>,
-      <td key="tasks-005" className="px-4 py-3">
-        3
-      </td>,
-    ],
-  ];
+    []
+  );
+
+  // Filter options for the Filter component
+  const filterOptions = useMemo(
+    () => ({
+      serviceTypes: [
+        { value: "flight", label: "✈️ Flight" },
+        { value: "hotel", label: "🏨 Hotel" },
+        { value: "car", label: "🚗 Car Rental" },
+        { value: "package", label: "🎫 Package" },
+      ],
+      statuses: [
+        { value: "successful", label: "Successful" },
+        { value: "pending", label: "Pending" },
+        { value: "failed", label: "Failed" },
+      ],
+      owners: [
+        { value: "anand", label: "Anand Mishra" },
+        { value: "priya", label: "Priya Sharma" },
+        { value: "rajesh", label: "Rajesh Kumar" },
+      ],
+    }),
+    []
+  );
+
+  const handleFilterChange = (filters) => {
+    console.log("Filters changed:", filters);
+    // Implement filter logic here
+  };
+
+  // Helper function to get status badge styling
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case "Successful":
+        return "px-2 py-1 text-xs rounded-full bg-green-100 text-green-700";
+      case "Pending":
+        return "px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700";
+      case "Failed":
+        return "px-2 py-1 text-xs rounded-full bg-red-100 text-red-700";
+      default:
+        return "px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700";
+    }
+  };
+
+  // Memoized formatted data for the table component
+  const formattedData = useMemo(
+    () =>
+      tableData.map((row, index) => [
+        <td key={`id-${index}`} className="px-4 py-3">
+          {row.id}
+        </td>,
+        <td key={`lead-${index}`} className="px-4 py-3">
+          {row.leadPax}
+        </td>,
+        <td key={`date-${index}`} className="px-4 py-3">
+          {row.travelDate}
+        </td>,
+        <td key={`service-${index}`} className="px-4 py-3">
+          {row.service}
+        </td>,
+        <td key={`status-${index}`} className="px-4 py-3">
+          <span className={getStatusBadgeClass(row.bookingStatus)}>
+            {row.bookingStatus}
+          </span>
+        </td>,
+        <td key={`amount-${index}`} className="px-4 py-3">
+          {row.amount}
+        </td>,
+        <td key={`voucher-${index}`} className="px-4 py-3">
+          <button
+            className="hover:scale-110 transition-transform"
+            aria-label="View voucher"
+          >
+            {row.voucher}
+          </button>
+        </td>,
+        <td key={`tasks-${index}`} className="px-4 py-3">
+          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+            {row.tasks}
+          </span>
+        </td>,
+      ]),
+    [tableData]
+  );
 
   return (
     <>
@@ -184,9 +181,14 @@ const OSBookingsPage = () => {
         </button>
       </div>
       <div className=" min-h-screen ml-20 mt-2 ">
-        <Filter />
+        <Filter
+          onFilterChange={handleFilterChange}
+          serviceTypes={filterOptions.serviceTypes}
+          statuses={filterOptions.statuses}
+          owners={filterOptions.owners}
+        />
         <SummaryCards />
-        <Table data={data} columns={columns} />
+        <Table data={formattedData} columns={columns} />
       </div>
       <BookingFormModal
         isOpen={isCreateOpen}

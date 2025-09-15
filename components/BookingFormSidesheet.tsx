@@ -10,7 +10,7 @@ interface Service {
   id: string;
   title: string;
   image: string;
-  category: 'travel' | 'accommodation' | 'transport' | 'activity';
+  category: "travel" | "accommodation" | "transport" | "activity";
   description?: string;
 }
 
@@ -22,7 +22,7 @@ interface BookingFormSidesheetProps {
   initialData?: any;
 }
 
-type TabType = 'general' | 'service' | 'review';
+type TabType = "general" | "service" | "review";
 
 interface TabConfig {
   id: TabType;
@@ -43,87 +43,103 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Memoized tab configuration
-  const tabs: TabConfig[] = useMemo(() => [
-    {
-      id: 'general',
-      label: 'General Info',
-      component: GeneralInfoForm,
-      isEnabled: true,
-    },
-    {
-      id: 'service',
-      label: 'Service Info',
-      component: ServiceInfoForm,
-      isEnabled: !!selectedService,
-    },
-    {
-      id: 'review',
-      label: 'Review & Submit',
-      component: () => <div>Review Component</div>, // Placeholder
-      isEnabled: !!selectedService && Object.keys(formData).length > 0,
-    },
-  ], [selectedService, formData]);
+  const tabs: TabConfig[] = useMemo(
+    () => [
+      {
+        id: "general",
+        label: "General Info",
+        component: GeneralInfoForm,
+        isEnabled: true,
+      },
+      {
+        id: "service",
+        label: "Service Info",
+        component: ServiceInfoForm,
+        isEnabled: !!selectedService,
+      },
+      {
+        id: "review",
+        label: "Review & Submit",
+        component: () => <div>Review Component</div>, // Placeholder
+        isEnabled: !!selectedService && Object.keys(formData).length > 0,
+      },
+    ],
+    [selectedService, formData]
+  );
 
   // Optimized tab click handler
-  const handleTabClick = useCallback((tabId: TabType) => {
-    const tab = tabs.find(t => t.id === tabId);
-    if (tab?.isEnabled) {
-      setActiveTab(tabId);
-    }
-  }, [tabs]);
+  const handleTabClick = useCallback(
+    (tabId: TabType) => {
+      const tab = tabs.find((t) => t.id === tabId);
+      if (tab?.isEnabled) {
+        setActiveTab(tabId);
+      }
+    },
+    [tabs]
+  );
 
   // Form data update handler
   const handleFormDataUpdate = useCallback((newData: any) => {
-    setFormData(prev => ({ ...prev, ...newData }));
+    setFormData((prev) => ({ ...prev, ...newData }));
   }, []);
 
   // Form submission handler
-  const handleFormSubmit = useCallback(async (data: any) => {
-    if (!selectedService) return;
-    
-    setIsSubmitting(true);
-    try {
-      const completeFormData = { ...formData, ...data, service: selectedService };
-      await onFormSubmit?.(completeFormData);
-      onClose();
-    } catch (error) {
-      console.error('Form submission error:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [formData, selectedService, onFormSubmit, onClose]);
+  const handleFormSubmit = useCallback(
+    async (data: any) => {
+      if (!selectedService) return;
+
+      setIsSubmitting(true);
+      try {
+        const completeFormData = {
+          ...formData,
+          ...data,
+          service: selectedService,
+        };
+        await onFormSubmit?.(completeFormData);
+        onClose();
+      } catch (error) {
+        console.error("Form submission error:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [formData, selectedService, onFormSubmit, onClose]
+  );
 
   // Memoized tab buttons
-  const tabButtons = useMemo(() => 
-    tabs.map((tab) => (
-      <button
-        key={tab.id}
-        className={`
+  const tabButtons = useMemo(
+    () =>
+      tabs.map((tab) => (
+        <button
+          key={tab.id}
+          className={`
           px-4 py-2 text-sm font-medium border-b-2 transition-colors
-          ${activeTab === tab.id
-            ? "border-green-500 text-green-600"
-            : tab.isEnabled
-            ? "border-transparent text-gray-500 hover:text-gray-700"
-            : "border-transparent text-gray-300 cursor-not-allowed"
+          ${
+            activeTab === tab.id
+              ? "border-green-500 text-green-600"
+              : tab.isEnabled
+              ? "border-transparent text-gray-500 hover:text-gray-700"
+              : "border-transparent text-gray-300 cursor-not-allowed"
           }
         `}
-        onClick={() => handleTabClick(tab.id)}
-        disabled={!tab.isEnabled}
-        aria-selected={activeTab === tab.id}
-        role="tab"
-      >
-        {tab.label}
-      </button>
-    )), [tabs, activeTab, handleTabClick]
+          onClick={() => handleTabClick(tab.id)}
+          disabled={!tab.isEnabled}
+          aria-selected={activeTab === tab.id}
+          role="tab"
+        >
+          {tab.label}
+        </button>
+      )),
+    [tabs, activeTab, handleTabClick]
   );
 
   // Memoized active tab content
   const activeTabContent = useMemo(() => {
-    const activeTabConfig = tabs.find(tab => tab.id === activeTab);
+    const activeTabConfig = tabs.find((tab) => tab.id === activeTab);
     if (!activeTabConfig) return null;
 
     const Component = activeTabConfig.component;
-    
+
     const commonProps = {
       formData,
       onFormDataUpdate: handleFormDataUpdate,
@@ -133,7 +149,15 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
     };
 
     return <Component {...commonProps} />;
-  }, [activeTab, tabs, formData, handleFormDataUpdate, handleFormSubmit, selectedService, isSubmitting]);
+  }, [
+    activeTab,
+    tabs,
+    formData,
+    handleFormDataUpdate,
+    handleFormSubmit,
+    selectedService,
+    isSubmitting,
+  ]);
 
   // Memoized title
   const title = useMemo(() => {
@@ -143,22 +167,17 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
 
   // Progress indicator
   const progress = useMemo(() => {
-    const enabledTabs = tabs.filter(tab => tab.isEnabled);
-    const currentIndex = enabledTabs.findIndex(tab => tab.id === activeTab);
+    const enabledTabs = tabs.filter((tab) => tab.isEnabled);
+    const currentIndex = enabledTabs.findIndex((tab) => tab.id === activeTab);
     return ((currentIndex + 1) / enabledTabs.length) * 100;
   }, [tabs, activeTab]);
 
   return (
-    <SideSheet 
-      isOpen={isOpen} 
-      onClose={onClose} 
-      title={title}
-      width="xl"
-    >
+    <SideSheet isOpen={isOpen} onClose={onClose} title={title} width="xl">
       <div className="flex flex-col h-full">
         {/* Progress Bar */}
         <div className="w-full bg-gray-200 h-1 mb-4">
-          <div 
+          <div
             className="bg-green-500 h-1 transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
@@ -169,9 +188,13 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <div className="flex items-center">
               <div className="flex-1">
-                <h3 className="font-semibold text-blue-900">{selectedService.title}</h3>
+                <h3 className="font-semibold text-blue-900">
+                  {selectedService.title}
+                </h3>
                 {selectedService.description && (
-                  <p className="text-sm text-blue-700 mt-1">{selectedService.description}</p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    {selectedService.description}
+                  </p>
                 )}
               </div>
               <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
@@ -203,12 +226,14 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
             >
               Cancel
             </button>
-            
+
             <div className="flex space-x-2">
-              {activeTab !== 'general' && (
+              {activeTab !== "general" && (
                 <button
                   onClick={() => {
-                    const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
+                    const currentIndex = tabs.findIndex(
+                      (tab) => tab.id === activeTab
+                    );
                     const prevTab = tabs[currentIndex - 1];
                     if (prevTab?.isEnabled) {
                       setActiveTab(prevTab.id);
@@ -220,11 +245,13 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
                   Previous
                 </button>
               )}
-              
-              {activeTab !== 'review' ? (
+
+              {activeTab !== "review" ? (
                 <button
                   onClick={() => {
-                    const currentIndex = tabs.findIndex(tab => tab.id === activeTab);
+                    const currentIndex = tabs.findIndex(
+                      (tab) => tab.id === activeTab
+                    );
                     const nextTab = tabs[currentIndex + 1];
                     if (nextTab?.isEnabled) {
                       setActiveTab(nextTab.id);
@@ -241,7 +268,7 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                   disabled={isSubmitting || !selectedService}
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit Booking'}
+                  {isSubmitting ? "Submitting..." : "Submit Booking"}
                 </button>
               )}
             </div>

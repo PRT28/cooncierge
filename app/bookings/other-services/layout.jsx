@@ -2,6 +2,7 @@
 
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
+import { BookingProvider } from "@/context/BookingContext";
 import { useState } from "react";
 
 export default function LimitlessLayout({ children }) {
@@ -11,7 +12,9 @@ export default function LimitlessLayout({ children }) {
       <Sidebar isOpen={isSideBarOpen} setIsOpen={setIsSideBarOpen} />
       <Header isOpen={isSideBarOpen} />
 
-      <main className="flex-1">{children}</main>
+      <main className="flex-1">
+        <BookingProvider>{children} </BookingProvider>
+      </main>
     </div>
   );
 }
