@@ -57,14 +57,8 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
         component: ServiceInfoForm,
         isEnabled: !!selectedService,
       },
-      {
-        id: "review",
-        label: "Review & Submit",
-        component: () => <div>Review Component</div>, // Placeholder
-        isEnabled: !!selectedService && Object.keys(formData).length > 0,
-      },
     ],
-    [selectedService, formData]
+    [selectedService]
   );
 
   // Optimized tab click handler
@@ -116,7 +110,7 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
           px-4 py-2 text-sm font-medium border-b-2 transition-colors
           ${
             activeTab === tab.id
-              ? "border-green-500 text-green-600"
+              ? "border-[#0D4B37] text-[#0D4B37]"
               : tab.isEnabled
               ? "border-transparent text-gray-500 hover:text-gray-700"
               : "border-transparent text-gray-300 cursor-not-allowed"
@@ -175,38 +169,9 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
   return (
     <SideSheet isOpen={isOpen} onClose={onClose} title={title} width="xl">
       <div className="flex flex-col h-full">
-        {/* Progress Bar */}
-        <div className="w-full bg-gray-200 h-1 mb-4">
-          <div
-            className="bg-green-500 h-1 transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
-        {/* Service Info Banner */}
-        {selectedService && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <div className="flex items-center">
-              <div className="flex-1">
-                <h3 className="font-semibold text-blue-900">
-                  {selectedService.title}
-                </h3>
-                {selectedService.description && (
-                  <p className="text-sm text-blue-700 mt-1">
-                    {selectedService.description}
-                  </p>
-                )}
-              </div>
-              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                {selectedService.category}
-              </span>
-            </div>
-          </div>
-        )}
-
         {/* Tabs */}
         <div className="border-b border-gray-200 mb-4">
-          <div className="flex space-x-0" role="tablist">
+          <div className="flex space-x-0 p-6" role="tablist">
             {tabButtons}
           </div>
         </div>

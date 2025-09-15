@@ -88,8 +88,8 @@ const Modal: React.FC<ModalProps> = ({
       <div
         className={`
           bg-white rounded-t-2xl md:rounded-lg shadow-xl w-[90vw] max-h-[90vh] overflow-hidden
-          transition-all duration-300 transform fixed
-          ${isMobile ? 'absolute bottom-0 w-full' : `${sizeClasses[size]} w-full`}
+          transition-all duration-300 transform
+          ${isMobile ? 'absolute bottom-0 w-full' : ``}
           ${className}
         `}
         onClick={(e) => e.stopPropagation()}

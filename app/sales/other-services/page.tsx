@@ -176,7 +176,7 @@ const OSSalesContent: React.FC = () => {
   };
 
   return (
-    <>
+    <div className="bg-[#F3F3F3]">
       <div className="flex justify-end gap-4 p-6 w-full mx-[10px] mt-[-15px]">
         <button className="bg-white text-[#114958] px-6 py-2 rounded-lg shadow hover:bg-gray-100 transition-colors">
           View Draft
@@ -186,7 +186,7 @@ const OSSalesContent: React.FC = () => {
         </button>
       </div>
       
-      <div className="min-h-screen ml-20 mt-2">
+      <div className="min-h-screen mt-2 p-5">
         <Filter 
           onFilterChange={handleFilterChange}
           serviceTypes={filterOptions.serviceTypes}
@@ -209,7 +209,7 @@ const OSSalesContent: React.FC = () => {
         onClose={closeSidesheet}
         selectedService={state.selectedService}
       />
-    </>
+    </div>
   );
 };
 

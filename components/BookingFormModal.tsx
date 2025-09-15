@@ -56,48 +56,40 @@ const ServiceCard: React.FC<ServiceCardProps> = React.memo(({
 
   return (
     <div
-      className={`
-        cursor-pointer rounded-xl w-full h-32 relative overflow-hidden
-        transition-all duration-300 hover:scale-105 hover:shadow-lg
-        ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
-      `}
-      onClick={handleClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleClick();
-        }
-      }}
-      aria-label={`Select ${service.title} service`}
-    >
-      <div className="relative w-full h-full">
-        <Image
-          src={service.image}
-          alt={`${service.title} service`}
-          fill
-          className="object-cover rounded-xl"
-          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
-        />
+  className={`
+    cursor-pointer rounded-[24px] w-full relative overflow-hidden
+    transition-all duration-300 hover:scale-105 hover:shadow-lg
+    ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+  `}
+  onClick={handleClick}
+  role="button"
+  tabIndex={0}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick();
+    }
+  }}
+  aria-label={`Select ${service.title} service`}
+>
+  <div className="relative w-full aspect-[4/3]">
+    <Image
+      src={service.image}
+      alt={`${service.title} service`}
+      fill
+      className="object-cover rounded-[24px] w-full h-full"
+      sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
+    />
 
-        {/* Dark overlay for better text visibility */}
-        <div className="absolute inset-0 bg-black/40 rounded-xl" />
-
-        {/* Content overlay matching Figma design */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-          <div className="text-3xl mb-2">{icon}</div>
-          <h3 className="font-semibold text-sm text-center px-2">{service.title}</h3>
-        </div>
-
-        {/* Loading overlay */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-white/50 flex items-center justify-center rounded-xl">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#114958]" />
-          </div>
-        )}
+    {/* Loading overlay */}
+    {isLoading && (
+      <div className="absolute inset-0 bg-white/50 flex items-center justify-center rounded-xl">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#114958]" />
       </div>
-    </div>
+    )}
+  </div>
+</div>
+
   );
 });
 
@@ -196,12 +188,12 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
       onClose={onClose}
       title="Select Service"
       size="xl"
-      className="max-w-4xl"
+      className="w-[90vw]"
     >
       <div className="flex flex-col items-center w-full">
         <div className="text-gray-500 text-sm text-center w-full mb-6">
           Choose from the range of services provided by{" "}
-          <span className="text-blue-600 font-medium">Company ABC</span>
+          <span className="text-[#114958] font-bold">Company ABC</span>
         </div>
         
         {isLoading ? (
@@ -211,7 +203,7 @@ const BookingFormModal: React.FC<BookingFormModalProps> = ({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-[90%] mb-6">
               {serviceCards}
             </div>
 
