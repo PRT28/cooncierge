@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useCallback, useMemo } from "react";
-import SideSheet from "./SideSheet";
+import { BookingProvider, useBooking } from "@/context/BookingContext";
+import SideSheet from "@/components/SideSheet";
 import GeneralInfoForm from "./forms/GeneralInfoForm";
 import ServiceInfoForm from "./forms/ServiceInfoForm";
+import AddNewCustomerForm from "./forms/AddNewCustomerForm";
 
 // Type definitions
 interface Service {
@@ -31,7 +33,7 @@ interface TabConfig {
   isEnabled: boolean;
 }
 
-const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
+const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
   isOpen,
   onClose,
   selectedService,
@@ -41,6 +43,7 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>("general");
   const [formData, setFormData] = useState<any>(initialData || {});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const { isAddCustomerOpen } = useBooking();
 
   // Memoized tab configuration
   const tabs: TabConfig[] = useMemo(
@@ -74,7 +77,7 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
 
   // Form data update handler
   const handleFormDataUpdate = useCallback((newData: any) => {
-    setFormData((prev) => ({ ...prev, ...newData }));
+    setFormData((prev: any) => ({ ...prev, ...newData }));
   }, []);
 
   // Form submission handler
@@ -167,6 +170,7 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
   }, [tabs, activeTab]);
 
   return (
+    <>
     <SideSheet isOpen={isOpen} onClose={onClose} title={title} width="xl">
       <div className="flex flex-col h-full">
         {/* Tabs */}
@@ -240,8 +244,22 @@ const BookingFormSidesheet: React.FC<BookingFormSidesheetProps> = ({
           </div>
         </div>
       </div>
+
+      
     </SideSheet>
+
+    {isAddCustomerOpen && <AddNewCustomerForm />}
+
+    </>
   );
 };
 
-export default React.memo(BookingFormSidesheet);
+export default function BookingFormSidesheetWrapper(
+  props: BookingFormSidesheetProps
+) {
+  return (
+    <BookingProvider>
+      <BookingFormSidesheetContent {...props} />
+    </BookingProvider>
+  );
+}

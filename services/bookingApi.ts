@@ -24,6 +24,22 @@ interface GeneralInfo {
   remarks: string;
 }
 
+interface CustomerFrom {
+  firstname: string;
+  lastname: string;
+  nickname: string;
+  contactnumber: number;
+  emailId: string;
+  dateofbirth: number;
+  gstin: number;
+  companyname: string;
+  adhaarnumber: number;
+  pan: number | string;
+  passport: number | string;
+  billingaddress: string | number;
+  remarks: string;
+}
+
 interface ServiceInfo {
   serviceType: string;
   destination: string;
@@ -40,6 +56,7 @@ interface BookingData {
   service: Service;
   generalInfo: GeneralInfo;
   serviceInfo: ServiceInfo;
+  customerform: CustomerFrom;
   timestamp: string;
 }
 
@@ -151,7 +168,7 @@ export const validateServiceInfo = (data: Partial<ServiceInfo>, service?: Servic
     const departureDate = new Date(data.departureDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     if (departureDate < today) {
       errors.departureDate = 'Departure date cannot be in the past';
     }
@@ -164,7 +181,7 @@ export const validateServiceInfo = (data: Partial<ServiceInfo>, service?: Servic
   if (data.departureDate && data.returnDate) {
     const departureDate = new Date(data.departureDate);
     const returnDate = new Date(data.returnDate);
-    
+
     if (returnDate <= departureDate) {
       errors.returnDate = 'Return date must be after departure date';
     }
@@ -176,6 +193,58 @@ export const validateServiceInfo = (data: Partial<ServiceInfo>, service?: Servic
 
   if (data.budget && data.budget > 10000000) {
     errors.budget = 'Budget cannot exceed ₹1,00,00,000';
+  }
+
+  return errors;
+};
+
+export const validateCustomerForm = (data: CustomerFrom): Record<string, string> => {
+  const errors: Record<string, string> = {};
+
+  if (!data.firstname?.trim()) {
+    errors.firstname = 'First name is required';
+  }
+
+  if (!data.lastname?.trim()) {
+    errors.lastname = 'Last name is required';
+  }
+
+  if (!data.contactnumber) {
+    errors.contactnumber = 'Contact number is required';
+  } else if (!/^\d{10}$/.test(String(data.contactnumber))) {
+    errors.contactnumber = 'Contact number must be 10 digits';
+  }
+
+  if (!data.emailId?.trim()) {
+    errors.emailId = 'Email is required';
+  } else if (!/\S+@\S+\.\S+/.test(data.emailId)) {
+    errors.emailId = 'Email address is invalid';
+  }
+
+  if (data.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(String(data.gstin))) {
+    errors.gstin = 'Invalid GSTIN format';
+  }
+
+  if (data.adhaarnumber && !/^\d{12}$/.test(String(data.adhaarnumber))) {
+    errors.adhaarnumber = 'Aadhaar number must be 12 digits';
+  }
+
+  if (data.pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(String(data.pan))) {
+    errors.pan = 'Invalid PAN format';
+  }
+
+  if (data.passport && !/^[A-PR-WYa-pr-wy][1-9]\\d\\s?\\d{4}[1-9]$/.test(String(data.passport))) {
+    errors.passport = 'Invalid Passport number format';
+  }
+
+  if (!data.billingaddress) {
+    errors.billingaddress = 'Billing address is required';
+  }
+
+  if (data.dateofbirth) {
+    if (new Date(data.dateofbirth) > new Date()) {
+      errors.dateofbirth = 'Date of birth cannot be in the future';
+    }
   }
 
   return errors;
@@ -257,7 +326,7 @@ export class BookingApiService {
       };
 
       const response = await apiClient.post('/quotation/create-quotation', payload);
-      
+
       return {
         success: true,
         data: response.data,
@@ -265,7 +334,7 @@ export class BookingApiService {
       };
     } catch (error) {
       console.error('Error creating quotation:', error);
-      
+
       if (axios.isAxiosError(error)) {
         return {
           success: false,
@@ -273,7 +342,7 @@ export class BookingApiService {
           errors: error.response?.data?.errors,
         };
       }
-      
+
       return {
         success: false,
         message: 'An unexpected error occurred',

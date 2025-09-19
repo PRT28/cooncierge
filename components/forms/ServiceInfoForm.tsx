@@ -6,7 +6,7 @@ import React, { useState, useCallback, useMemo, useEffect } from "react";
 interface Service {
   id: string;
   title: string;
-  category: 'travel' | 'accommodation' | 'transport' | 'activity';
+  category: "travel" | "accommodation" | "transport" | "activity";
 }
 
 interface ServiceInfoFormData {
@@ -17,7 +17,7 @@ interface ServiceInfoFormData {
   budget: number;
   preferences: string;
   specialRequests: string;
-  priority: 'low' | 'medium' | 'high';
+  priority: "low" | "medium" | "high";
   flexibility: boolean;
 }
 
@@ -51,7 +51,7 @@ const ServiceInfoForm: React.FC<ServiceInfoFormProps> = ({
     budget: 0,
     preferences: "",
     specialRequests: "",
-    priority: 'medium',
+    priority: "medium",
     flexibility: false,
     ...externalFormData,
   });
@@ -59,9 +59,16 @@ const ServiceInfoForm: React.FC<ServiceInfoFormProps> = ({
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  interface FieldRule {
+    required?: boolean;
+    minLength?: number;
+    min?: number;
+    message: string;
+  }
+
   // Validation rules based on service type
   const validationRules = useMemo(() => {
-    const baseRules = {
+    const baseRules: Record<string, FieldRule> = {
       destination: {
         required: true,
         minLength: 2,
@@ -79,7 +86,7 @@ const ServiceInfoForm: React.FC<ServiceInfoFormProps> = ({
     };
 
     // Add service-specific rules
-    if (selectedService?.category === 'travel') {
+    if (selectedService?.category === "travel") {
       return {
         ...baseRules,
         returnDate: {
@@ -93,83 +100,107 @@ const ServiceInfoForm: React.FC<ServiceInfoFormProps> = ({
   }, [selectedService]);
 
   // Validation function
-  const validateField = useCallback((name: string, value: any): string => {
-    const rule = validationRules[name as keyof typeof validationRules];
-    if (!rule) return "";
+  const validateField = useCallback(
+    (name: string, value: any): string => {
+      const rule = validationRules[name as keyof typeof validationRules];
+      if (!rule) return "";
 
-    if (rule.required && (!value || (typeof value === 'string' && value.trim() === ""))) {
-      return rule.message;
-    }
-
-    if (rule.minLength && typeof value === 'string' && value.length < rule.minLength) {
-      return rule.message;
-    }
-
-    if (rule.min && typeof value === 'number' && value < rule.min) {
-      return rule.message;
-    }
-
-    // Date validation
-    if (name === 'returnDate' && formData.departureDate && value) {
-      const departureDate = new Date(formData.departureDate);
-      const returnDate = new Date(value);
-      if (returnDate <= departureDate) {
-        return "Return date must be after departure date";
+      if (
+        rule.required &&
+        (!value || (typeof value === "string" && value.trim() === ""))
+      ) {
+        return rule.message;
       }
-    }
 
-    return "";
-  }, [validationRules, formData.departureDate]);
+      if (
+        rule.minLength &&
+        typeof value === "string" &&
+        value.length < rule.minLength
+      ) {
+        return rule.message;
+      }
+
+      if (rule.min && typeof value === "number" && value < rule.min) {
+        return rule.message;
+      }
+
+      // Date validation
+      if (name === "returnDate" && formData.departureDate && value) {
+        const departureDate = new Date(formData.departureDate);
+        const returnDate = new Date(value);
+        if (returnDate <= departureDate) {
+          return "Return date must be after departure date";
+        }
+      }
+
+      return "";
+    },
+    [validationRules, formData.departureDate]
+  );
 
   // Handle input changes
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    let processedValue: any = value;
+  const handleChange = useCallback(
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >
+    ) => {
+      const { name, value, type } = e.target;
+      let processedValue: any = value;
 
-    if (type === 'number') {
-      processedValue = parseFloat(value) || 0;
-    } else if (type === 'checkbox') {
-      processedValue = (e.target as HTMLInputElement).checked;
-    }
+      if (type === "number") {
+        processedValue = parseFloat(value) || 0;
+      } else if (type === "checkbox") {
+        processedValue = (e.target as HTMLInputElement).checked;
+      }
 
-    setFormData(prev => {
-      const newData = { ...prev, [name]: processedValue };
-      onFormDataUpdate?.(newData);
-      return newData;
-    });
+      setFormData((prev) => {
+        const newData = { ...prev, [name]: processedValue };
+        onFormDataUpdate?.(newData);
+        return newData;
+      });
 
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: "" }));
-    }
+      // Clear error when user starts typing
+      if (errors[name]) {
+        setErrors((prev) => ({ ...prev, [name]: "" }));
+      }
 
-    // Mark field as touched
-    setTouched(prev => ({ ...prev, [name]: true }));
-  }, [errors, onFormDataUpdate]);
+      // Mark field as touched
+      setTouched((prev) => ({ ...prev, [name]: true }));
+    },
+    [errors, onFormDataUpdate]
+  );
 
   // Handle blur for validation
-  const handleBlur = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    
-    if (showValidation) {
-      const error = validateField(name, value);
-      setErrors(prev => ({ ...prev, [name]: error }));
-    }
-    
-    setTouched(prev => ({ ...prev, [name]: true }));
-  }, [validateField, showValidation]);
+  const handleBlur = useCallback(
+    (
+      e: React.FocusEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >
+    ) => {
+      const { name, value } = e.target;
+
+      if (showValidation) {
+        const error = validateField(name, value);
+        setErrors((prev) => ({ ...prev, [name]: error }));
+      }
+
+      setTouched((prev) => ({ ...prev, [name]: true }));
+    },
+    [validateField, showValidation]
+  );
 
   // Sync with external form data
   useEffect(() => {
     if (externalFormData && Object.keys(externalFormData).length > 0) {
-      setFormData(prev => ({ ...prev, ...externalFormData }));
+      setFormData((prev) => ({ ...prev, ...externalFormData }));
     }
   }, [externalFormData]);
 
   // Update service type when selected service changes
   useEffect(() => {
     if (selectedService) {
-      setFormData(prev => ({ ...prev, serviceType: selectedService.title }));
+      setFormData((prev) => ({ ...prev, serviceType: selectedService.title }));
     }
   }, [selectedService]);
 
@@ -182,12 +213,20 @@ const ServiceInfoForm: React.FC<ServiceInfoFormProps> = ({
     className?: string;
     min?: number;
     step?: string;
-  }> = ({ name, type = "text", placeholder, required, className = "", min, step }) => (
+  }> = ({
+    name,
+    type = "text",
+    placeholder,
+    required,
+    className = "",
+    min,
+    step,
+  }) => (
     <div className="relative">
       <input
         type={type}
         name={name}
-        value={formData[name]}
+        value={name}
         onChange={handleChange}
         onBlur={handleBlur}
         placeholder={placeholder}
@@ -197,11 +236,12 @@ const ServiceInfoForm: React.FC<ServiceInfoFormProps> = ({
         disabled={isSubmitting}
         className={`
           w-full border rounded-md px-3 py-2 text-sm transition-colors
-          ${errors[name] && touched[name] 
-            ? 'border-red-300 focus:ring-red-200' 
-            : 'border-gray-200 focus:ring-blue-200'
+          ${
+            errors[name] && touched[name]
+              ? "border-red-300 focus:ring-red-200"
+              : "border-gray-200 focus:ring-blue-200"
           }
-          ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}
+          ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}
           ${className}
         `}
       />
@@ -249,49 +289,34 @@ const ServiceInfoForm: React.FC<ServiceInfoFormProps> = ({
       </div>
 
       {/* Date fields based on service type */}
-      {selectedService.category === 'travel' ? (
+      {selectedService.category === "travel" ? (
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Departure Date <span className="text-red-500">*</span>
             </label>
-            <InputField
-              name="departureDate"
-              type="date"
-              required
-            />
+            <InputField name="departureDate" type="date" required />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Return Date <span className="text-red-500">*</span>
             </label>
-            <InputField
-              name="returnDate"
-              type="date"
-              required
-            />
+            <InputField name="returnDate" type="date" required />
           </div>
         </div>
-      ) : selectedService.category === 'accommodation' ? (
+      ) : selectedService.category === "accommodation" ? (
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Check-in Date <span className="text-red-500">*</span>
             </label>
-            <InputField
-              name="departureDate"
-              type="date"
-              required
-            />
+            <InputField name="departureDate" type="date" required />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Check-out Date
             </label>
-            <InputField
-              name="returnDate"
-              type="date"
-            />
+            <InputField name="returnDate" type="date" />
           </div>
         </div>
       ) : (
@@ -299,11 +324,7 @@ const ServiceInfoForm: React.FC<ServiceInfoFormProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Service Date <span className="text-red-500">*</span>
           </label>
-          <InputField
-            name="departureDate"
-            type="date"
-            required
-          />
+          <InputField name="departureDate" type="date" required />
         </div>
       )}
 
@@ -398,7 +419,7 @@ const ServiceInfoForm: React.FC<ServiceInfoFormProps> = ({
             disabled={isSubmitting}
             className="px-6 py-2 bg-[#114958] text-white rounded-lg hover:bg-[#0d3a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Saving...' : 'Save Service Info'}
+            {isSubmitting ? "Saving..." : "Save Service Info"}
           </button>
         </div>
       )}
