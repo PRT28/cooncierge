@@ -52,27 +52,30 @@ export default function SignIn() {
       <div className="absolute top-[-20px] left-0 w-full overflow-hidden">
         <Image
           src="/login/vectors/Vector 1.svg"
-          alt=""
+          alt="Decorative gradient"
           width={1920}
           height={500}
           className="w-full h-auto relative z-30"
-          unoptimized
+          priority
+          quality={70}
         />
         <Image
           src="/login/vectors/Vector 2.svg"
-          alt=""
+          alt="Decorative gradient"
           width={1920}
           height={500}
           className="w-full h-auto mt-[-370px] opacity-50 relative z-20"
-          unoptimized
+          loading="lazy"
+          quality={70}
         />
         <Image
           src="/login/vectors/Vector 3.svg"
-          alt=""
+          alt="Decorative gradient"
           width={1920}
           height={500}
           className="w-full h-auto mt-[-410px] opacity-40 relative z-10"
-          unoptimized
+          loading="lazy"
+          quality={70}
         />
       </div>
 
@@ -80,27 +83,30 @@ export default function SignIn() {
       <div className="absolute right-0 bottom-[-30px] w-[520px] h-[360px] overflow-hidden">
         <Image
           src="/login/vectors/Vector 4.svg"
-          alt=""
+          alt="Decorative shape"
           width={520}
           height={360}
           className="absolute bottom-0 right-0 w-[520px] h-auto z-30 mr-[-120px]"
-          unoptimized
+          loading="lazy"
+          quality={70}
         />
         <Image
           src="/login/vectors/Vector 5.svg"
-          alt=""
+          alt="Decorative shape"
           width={520}
           height={360}
           className="absolute bottom-0 right-0 w-[520px] h-auto mr-[-100px] opacity-50 z-20"
-          unoptimized
+          loading="lazy"
+          quality={70}
         />
         <Image
           src="/login/vectors/Vector 6.svg"
-          alt=""
+          alt="Decorative shape"
           width={520}
           height={360}
           className="absolute bottom-0 right-0 w-[520px] h-auto mr-[-80px] opacity-40 z-10"
-          unoptimized
+          loading="lazy"
+          quality={70}
         />
       </div>
 

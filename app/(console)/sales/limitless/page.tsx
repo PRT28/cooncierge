@@ -185,7 +185,7 @@ const LimitlessSalesContent: React.FC = () => {
         </button>
       </div>
       
-      <div className="min-h-screen ml-20 mt-2">
+      <div className="min-h-screen mt-2">
         <Filter 
           onFilterChange={handleFilterChange}
           serviceTypes={filterOptions.serviceTypes}

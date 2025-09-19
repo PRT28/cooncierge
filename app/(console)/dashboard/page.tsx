@@ -1,21 +1,39 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import dynamic from "next/dynamic";
+import React, { useState, useMemo, useCallback } from "react";
 import axios from "axios";
 import { getRandomBgTextClass, getRandomDarkBgClass } from "@/utils/helper";
-import Calendar from "@/components/Calendar";
 import { useCalendar } from "@/context/CalendarContext";
 import { BookingProvider, useBooking } from "@/context/BookingContext";
-import BookingFormModal from "@/components/BookingFormModal";
-import BookingFormSidesheet from "@/components/BookingFormSidesheet";
+import CalendarSkeleton from "@/components/skeletons/CalendarSkeleton";
+import ModalSkeleton from "@/components/skeletons/ModalSkeleton";
+import SidesheetSkeleton from "@/components/skeletons/SidesheetSkeleton";
 
-// Type definitions
-interface TaskLog {
+const Calendar = dynamic(() => import("@/components/Calendar"), {
+  loading: () => <CalendarSkeleton />,
+  ssr: false,
+});
+
+const BookingFormModal = dynamic(() => import("@/components/BookingFormModal"), {
+  loading: () => <ModalSkeleton />,
+  ssr: false,
+});
+
+const BookingFormSidesheet = dynamic(
+  () => import("@/components/BookingFormSidesheet"),
+  {
+    loading: () => <SidesheetSkeleton />,
+    ssr: false,
+  }
+);
+
+type TaskLog = {
   activity: string;
   dateTime: string;
   status?: 'completed' | 'in-progress' | 'pending';
-  [key: string]: any;
-}
+  [key: string]: unknown;
+};
 
 interface PercentageLogs {
   completedCount: number;
@@ -32,7 +50,6 @@ interface SummaryData {
   recentLogs?: TaskLog[];
 }
 
-// Dashboard content component
 const DashboardContent: React.FC = () => {
   const { calenderShow, setCalenderShow } = useCalendar();
   const {
@@ -48,7 +65,6 @@ const DashboardContent: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Memoized date formatter with proper typing
   const formatDate = useCallback((dateString: string): string => {
     const date = new Date(dateString);
     const day = date.getDate();
@@ -66,7 +82,6 @@ const DashboardContent: React.FC = () => {
     return `${day}${suffix} ${month}`;
   }, []);
 
-  // Optimized data fetching with error handling
   const fetchSummaryData = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError(null);
@@ -99,17 +114,10 @@ const DashboardContent: React.FC = () => {
     }
   }, []);
 
-  // Uncomment when API is ready
-  // useEffect(() => {
-  //   fetchSummaryData();
-  // }, [fetchSummaryData]);
-
-  // Memoized toggle handler
   const toggleCalendar = useCallback(() => {
     setCalenderShow(!calenderShow);
   }, [calenderShow, setCalenderShow]);
 
-  // Memoized status badge
   const statusBadge = useMemo(() => {
     const pendingCount = summaryData.currentUserPendingTaskCount;
     
@@ -128,7 +136,6 @@ const DashboardContent: React.FC = () => {
     );
   }, [summaryData.currentUserPendingTaskCount]);
 
-  // Memoized date-wise logs
   const dateWiseLogsCards = useMemo(() => {
     if (!summaryData.dateWiseLogs) return null;
     
@@ -157,7 +164,6 @@ const DashboardContent: React.FC = () => {
     ));
   }, [summaryData.dateWiseLogs, formatDate]);
 
-  // Memoized team performance cards
   const teamPerformanceCards = useMemo(() => {
     if (!summaryData.teamPercentCompleteLogs) return null;
     
@@ -188,7 +194,6 @@ const DashboardContent: React.FC = () => {
     });
   }, [summaryData.teamPercentCompleteLogs]);
 
-  // Memoized recent activity items
   const recentActivityItems = useMemo(() => {
     if (!summaryData.recentLogs) return null;
     
@@ -211,21 +216,16 @@ const DashboardContent: React.FC = () => {
     });
   }, [summaryData.recentLogs]);
 
-  if (loading) {
-    return (
-      <div className="transition-all duration-500 ease-in-out flex-1 ml-[44px] scale-100 w-[95vw] pl-[3%] mt-10">
+  return (
+    <div className="transition-all duration-500 ease-in-out space-y-6">
+      {loading && (
         <div className="flex items-center justify-center h-64">
           <div className="text-gray-600">Loading dashboard...</div>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="transition-all duration-500 ease-in-out flex-1 ml-[44px] scale-100 w-[95vw] pl-[3%] mt-10">
+      )}
       {!calenderShow && (
         <>
-          <div className="flex flex-col items-start self-stretch rounded-[16px] border border-gray-100 bg-white shadow-sm w-[100%]">
+          <div className="flex flex-col items-start self-stretch rounded-[16px] border border-gray-100 bg-white shadow-sm">
             <div className="flex justify-between items-center w-[100%] px-5 py-4 border-b border-[#E2E1E1]">
               {statusBadge}
               <div className="flex items-center justify-between gap-2">
@@ -246,16 +246,16 @@ const DashboardContent: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex w-[100%] px-5 py-4">
+            <div className="flex w-full px-5 py-4">
               <div className="flex justify-between items-center gap-4 w-full flex-wrap">
                 {dateWiseLogsCards}
               </div>
             </div>
           </div>
 
-          <div className="flex gap-6 mt-6">
+          <div className="flex flex-col lg:flex-row gap-6">
             {/* Task Overview */}
-            <div className="bg-white p-6 rounded-xl shadow w-1/3">
+            <div className="bg-white p-6 rounded-xl shadow flex-1 min-w-[280px]">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-800">
                   Task Overview
@@ -304,7 +304,7 @@ const DashboardContent: React.FC = () => {
             </div>
 
             {/* Team Performance */}
-            <div className="bg-white p-6 rounded-xl shadow w-1/3">
+            <div className="bg-white p-6 rounded-xl shadow flex-1 min-w-[280px]">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-800">
                   Team Performance
@@ -317,7 +317,7 @@ const DashboardContent: React.FC = () => {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white p-6 rounded-xl shadow w-1/3">
+            <div className="bg-white p-6 rounded-xl shadow flex-1 min-w-[280px]">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-800">
                   Recent Activity
@@ -340,22 +340,25 @@ const DashboardContent: React.FC = () => {
       )}
 
       {/* Booking Components */}
-      <BookingFormModal
-        isOpen={state.isModalOpen}
-        onClose={closeModal}
-        onSelectedService={selectService}
-      />
+      {state.isModalOpen && (
+        <BookingFormModal
+          isOpen={state.isModalOpen}
+          onClose={closeModal}
+          onSelectedService={selectService}
+        />
+      )}
 
-      <BookingFormSidesheet
-        isOpen={state.isSidesheetOpen}
-        onClose={closeSidesheet}
-        selectedService={state.selectedService}
-      />
+      {state.isSidesheetOpen && (
+        <BookingFormSidesheet
+          isOpen={state.isSidesheetOpen}
+          onClose={closeSidesheet}
+          selectedService={state.selectedService}
+        />
+      )}
     </div>
   );
 };
 
-// Main Dashboard component with providers
 const Dashboard: React.FC = () => {
   return (
     <BookingProvider>

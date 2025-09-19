@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Performance optimizations
   experimental: {
     optimizePackageImports: ['react-icons'],
     turbo: {
@@ -14,7 +13,6 @@ const nextConfig: NextConfig = {
     },
   },
 
-  // Image optimization
   images: {
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
@@ -24,12 +22,9 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Compression
   compress: true,
 
-  // Bundle optimization
   webpack: (config, { dev, isServer }) => {
-    // Optimize bundle size
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
@@ -49,7 +44,6 @@ const nextConfig: NextConfig = {
       };
     }
 
-    // Optimize SVG imports
     config.module.rules.push({
       test: /\.svg$/,
       use: ['@svgr/webpack'],
@@ -58,7 +52,6 @@ const nextConfig: NextConfig = {
     return config;
   },
 
-  // Headers for better caching
   async headers() {
     return [
       {
@@ -90,23 +83,18 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // TypeScript configuration
   typescript: {
     ignoreBuildErrors: false,
   },
 
-  // ESLint configuration
   eslint: {
     ignoreDuringBuilds: false,
   },
 
-  // Output configuration for better performance
   output: 'standalone',
 
-  // Power optimizations
   poweredByHeader: false,
 
-  // Redirect trailing slashes
   trailingSlash: false,
 };
 
