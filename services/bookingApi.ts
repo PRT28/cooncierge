@@ -40,6 +40,60 @@ interface CustomerFrom {
   remarks: string;
 }
 
+interface VendorForm {
+  companyname: string;
+  companyemail: string;
+  contactnumber: number;
+  gstin: number;
+  firstname: string;
+  lastname: string;
+  nickname: string;
+  emailId: string;
+  dateofbirth: number;
+  document: number | "";
+  billingaddress: string | number;
+  remarks: string;
+}
+
+interface FlightSegment {
+  id: string;
+  flightnumber: number | string;
+  traveldate: string;
+  cabinclass: "Economy" | "Premium Economy" | "Business" | "First Class" | string;
+   pnr?: string;
+}
+
+interface ReturnFlightSegment {
+  id?: string | null;
+  flightnumber: number | string;
+  traveldate: string;
+  cabinclass:
+    | "Economy"
+    | "Premium Economy"
+    | "Business"
+    | "First Class"
+    | string;
+     pnr?: string;
+}
+
+interface FlightInfoForm {
+  bookingdate: string;
+  traveldate: string; // This can be the main/first travel date
+  bookingstatus: "Confirmed" | "Canceled" | "In Progress" | string;
+  costprice: number | string;
+  sellingprice: number | string;
+  PNR: number | string;
+  pnrEnabled: boolean;
+  segments: FlightSegment[]; // Array of flight segments
+  returnSegments: ReturnFlightSegment[]; // array for return segments
+  
+  samePNRForAllSegments: boolean; // For the toggle
+  flightType: "One Way" | "Round Trip" | "Multi-City"; // For the flight type tabs
+  voucher: File | null;
+  taxinvoice: File | null;
+  remarks: string;
+}
+
 interface ServiceInfo {
   serviceType: string;
   destination: string;
@@ -57,6 +111,8 @@ interface BookingData {
   generalInfo: GeneralInfo;
   serviceInfo: ServiceInfo;
   customerform: CustomerFrom;
+  vendorform: VendorForm;
+  flightinfoform: FlightInfoForm;
   timestamp: string;
 }
 
@@ -250,6 +306,147 @@ export const validateCustomerForm = (data: CustomerFrom): Record<string, string>
   return errors;
 };
 
+export const validateVendorForm = (data: VendorForm): Record<string, string> => {
+  const errors: Record<string, string> = {};
+
+ 
+  if (!data.companyname?.trim()) {
+    errors.companyname = "Company name is required";
+  }
+
+  if (!data.companyemail?.trim()) {
+    errors.companyemail = "Company email is required";
+  } else if (!/\S+@\S+\.\S+/.test(data.companyemail)) {
+    errors.companyemail = "Company email address is invalid";
+  }
+
+  
+  if (!data.contactnumber) {
+    errors.contactnumber = "Contact number is required";
+  } else if (!/^\d{10}$/.test(String(data.contactnumber))) {
+    errors.contactnumber = "Contact number must be 10 digits";
+  }
+
+  
+  if (data.gstin && 
+      !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/
+        .test(String(data.gstin))) {
+    errors.gstin = "Invalid GSTIN format";
+  }
+
+  
+  if (!data.firstname?.trim()) {
+    errors.firstname = "First name is required";
+  }
+
+  if (!data.lastname?.trim()) {
+    errors.lastname = "Last name is required";
+  }
+
+  if (!data.emailId?.trim()) {
+    errors.emailId = "Email is required";
+  } else if (!/\S+@\S+\.\S+/.test(data.emailId)) {
+    errors.emailId = "Email address is invalid";
+  }
+
+  
+  if (data.dateofbirth) {
+    if (new Date(data.dateofbirth) > new Date()) {
+      errors.dateofbirth = "Date of birth cannot be in the future";
+    }
+  }
+
+  if (!data.document) {
+    errors.document = "Document is required";
+  }
+
+  
+  if (!data.billingaddress || String(data.billingaddress).trim() === "") {
+    errors.billingaddress = "Billing address is required";
+  }
+
+  return errors;
+};
+
+export const validateFlightInfoForm = (data: FlightInfoForm): Record<string, string> => {
+  const errors: Record<string, string> = {};
+
+  if (!data.bookingdate?.trim()) {
+    errors.bookingdate = "Booking date is required";
+  }
+
+  if (!data.traveldate?.trim()) {
+    errors.traveldate = "Travel date is required";
+  } else if (new Date(data.traveldate) < new Date(data.bookingdate)) {
+    errors.traveldate = "Travel date cannot be before booking date";
+  }
+
+  if (!data.bookingstatus?.trim()) {
+    errors.bookingstatus = "Booking status is required";
+  }
+
+  if (data.costprice === "" || data.costprice === null || isNaN(Number(data.costprice))) {
+    errors.costprice = "Cost price must be a valid number";
+  }
+
+  if (data.sellingprice === "" || data.sellingprice === null || isNaN(Number(data.sellingprice))) {
+    errors.sellingprice = "Selling price must be a valid number";
+  }
+
+  if (!data.PNR && data.PNR !== 0) {
+    errors.PNR = "PNR is required";
+  } else if (!/^[A-Z0-9]{5,10}$/i.test(String(data.PNR))) {
+    errors.PNR = "PNR must be 5–10 alphanumeric characters";
+  }
+
+  // Validate segments array
+  if (!data.segments || data.segments.length === 0) {
+    errors.segments = "At least one flight segment is required";
+  } else {
+    // Validate each segment
+    data.segments.forEach((segment, index) => {
+      const segmentPrefix = `segments[${index}]`;
+
+      if (!segment.flightnumber && segment.flightnumber !== 0) {
+        errors[`${segmentPrefix}.flightnumber`] = `Flight number is required for segment ${index + 1}`;
+      } else if (!/^[0-9]{2,6}$/.test(String(segment.flightnumber))) {
+        errors[`${segmentPrefix}.flightnumber`] = `Flight number must be 2–6 digits for segment ${index + 1}`;
+      }
+
+      if (!segment.traveldate?.trim()) {
+        errors[`${segmentPrefix}.traveldate`] = `Travel date is required for segment ${index + 1}`;
+      } else if (new Date(segment.traveldate) < new Date(data.bookingdate)) {
+        errors[`${segmentPrefix}.traveldate`] = `Travel date cannot be before booking date for segment ${index + 1}`;
+      }
+
+      if (!segment.cabinclass?.trim()) {
+        errors[`${segmentPrefix}.cabinclass`] = `Cabin class is required for segment ${index + 1}`;
+      }
+    });
+  }
+
+  // Flight type validation (optional, but good to have)
+  if (!data.flightType) {
+    errors.flightType = "Flight type is required";
+  }
+
+  if (!data.voucher) {
+    errors.voucher = "Voucher file is required";
+  }
+
+  if (!data.taxinvoice) {
+    errors.taxinvoice = "Tax invoice file is required";
+  }
+
+  if (data.remarks && data.remarks.length > 500) {
+    errors.remarks = "Remarks cannot exceed 500 characters";
+  }
+
+  return errors;
+};
+
+
+
 // API Service Class
 export class BookingApiService {
   // Get available services
@@ -319,6 +516,9 @@ export class BookingApiService {
         formFields: {
           ...bookingData.generalInfo,
           ...bookingData.serviceInfo,
+          ...bookingData.customerform,
+           ...bookingData.vendorform,
+            ...bookingData.flightinfoform,
           service: bookingData.service,
         },
         totalAmount: bookingData.serviceInfo.budget,

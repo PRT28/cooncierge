@@ -65,6 +65,64 @@ interface CustomerForm {
   remarks: string;
 }
 
+interface VendorForm {
+  companyname: string;
+  companyemail: string;
+  contactnumber: number;
+  gstin: number;
+  firstname: string;
+  lastname: string;
+  nickname: string;
+  emailId: string;
+  dateofbirth: number;
+  document: number;
+  billingaddress: string | number;
+  remarks: string;
+}
+
+interface FlightSegment {
+  id: string;
+  flightnumber: number | string;
+  traveldate: string;
+  cabinclass:
+    | "Economy"
+    | "Premium Economy"
+    | "Business"
+    | "First Class"
+    | string;
+  pnr?: string;
+}
+
+interface ReturnFlightSegment {
+  id: string | null;
+  flightnumber: number | string;
+  traveldate: string;
+  cabinclass:
+    | "Economy"
+    | "Premium Economy"
+    | "Business"
+    | "First Class"
+    | string;
+  pnr?: string;
+}
+
+interface FlightInfoForm {
+  bookingdate: string;
+  traveldate: string;
+  bookingstatus: "Confirmed" | "Canceled" | "In Progress" | string;
+  costprice: number | string;
+  sellingprice: number | string;
+  PNR: number | string;
+  pnrEnabled: boolean;
+  segments: FlightSegment[]; // Array of flight segments
+  returnSegments: ReturnFlightSegment[]; // array for return segments
+  samePNRForAllSegments: boolean;
+  flightType: "One Way" | "Round Trip" | "Multi-City";
+  voucher: File | null;
+  taxinvoice: File | null;
+  remarks: string;
+}
+
 interface BookingState {
   // UI State
   isModalOpen: boolean;
@@ -76,6 +134,8 @@ interface BookingState {
   generalInfo: Partial<GeneralInfo>;
   serviceInfo: Partial<ServiceInfo>;
   customerForm: CustomerForm;
+  vendorForm: VendorForm;
+  flightinfoform: FlightInfoForm;
 
   // Form Progress
   currentStep: "service-selection" | "general-info" | "service-info" | "review";
@@ -100,6 +160,7 @@ type BookingAction =
   | { type: "UPDATE_GENERAL_INFO"; payload: Partial<GeneralInfo> }
   | { type: "UPDATE_SERVICE_INFO"; payload: Partial<ServiceInfo> }
   | { type: "SET_CUSTOMER_FORM"; payload: CustomerForm }
+  | { type: "SET_VENDOR_FORM"; payload: VendorForm }
   | { type: "SET_CURRENT_STEP"; payload: BookingState["currentStep"] }
   | { type: "COMPLETE_STEP"; payload: string }
   | { type: "SET_ERRORS"; payload: Record<string, string> }
@@ -130,6 +191,10 @@ interface BookingContextType {
   isAddCustomerOpen: boolean;
   openAddCustomer: () => void;
   closeAddCustomer: () => void;
+  setVendorForm: (form: VendorForm) => void;
+  isAddVendorOpen: boolean;
+  openAddVendor: () => void;
+  closeAddVendor: () => void;
 
   // Validation Actions
   setErrors: (errors: Record<string, string>) => void;
@@ -147,7 +212,6 @@ interface BookingContextType {
   canProceedToNext: boolean;
   totalSteps: number;
   currentStepIndex: number;
-  progressPercentage: number;
 }
 
 // Initial state
@@ -171,6 +235,50 @@ const initialState: BookingState = {
     pan: "",
     passport: "",
     billingaddress: "",
+    remarks: "",
+  },
+  vendorForm: {
+    firstname: "",
+    lastname: "",
+    companyemail: "",
+    nickname: "",
+    document: 0,
+    contactnumber: 0,
+    emailId: "",
+    dateofbirth: 0,
+    gstin: 0,
+    companyname: "",
+    billingaddress: "",
+    remarks: "",
+  },
+  flightinfoform: {
+    bookingdate: "",
+    traveldate: "",
+    bookingstatus: "",
+    costprice: "",
+    sellingprice: "",
+    PNR: "",
+    segments: [
+      {
+        id: "1",
+        flightnumber: "",
+        traveldate: "",
+        cabinclass: "",
+      },
+    ], // Start with one segment
+    returnSegments: [
+      {
+        id: "return-1",
+        flightnumber: "",
+        traveldate: "",
+        cabinclass: "",
+      },
+    ],
+    pnrEnabled: false,
+    samePNRForAllSegments: false,
+    flightType: "One Way",
+    voucher: null,
+    taxinvoice: null,
     remarks: "",
   },
   currentStep: "service-selection",
@@ -226,6 +334,9 @@ const bookingReducer = (
     case "SET_CUSTOMER_FORM":
       return { ...state, customerForm: action.payload };
 
+    case "SET_VENDOR_FORM":
+      return { ...state, vendorForm: action.payload };
+
     case "SET_CURRENT_STEP":
       return { ...state, currentStep: action.payload };
 
@@ -273,9 +384,13 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [state, dispatch] = useReducer(bookingReducer, initialState);
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
 
   const openAddCustomer = useCallback(() => setIsAddCustomerOpen(true), []);
   const closeAddCustomer = useCallback(() => setIsAddCustomerOpen(false), []);
+
+  const openAddVendor = useCallback(() => setIsAddVendorOpen(true), []);
+  const closeAddVendor = useCallback(() => setIsAddVendorOpen(false), []);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -348,6 +463,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
     dispatch({ type: "SET_CUSTOMER_FORM", payload: form });
   }, []);
 
+  const setVendorForm = useCallback((form: VendorForm) => {
+    dispatch({ type: "SET_VENDOR_FORM", payload: form });
+  }, []);
+
   const setCurrentStep = useCallback((step: BookingState["currentStep"]) => {
     dispatch({ type: "SET_CURRENT_STEP", payload: step });
   }, []);
@@ -400,6 +519,8 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         generalInfo: state.generalInfo as GeneralInfo,
         serviceInfo: state.serviceInfo as ServiceInfo,
         customerform: state.customerForm,
+        vendorform: state.vendorForm,
+        flightinfoform: state.flightinfoform,
         timestamp: new Date().toISOString(),
       };
 
@@ -432,6 +553,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
     state.selectedService,
     state.generalInfo,
     state.serviceInfo,
+    state.customerForm,
     resetBooking,
   ]);
 
@@ -502,7 +624,6 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
   const steps = ["service-selection", "general-info", "service-info", "review"];
   const totalSteps = steps.length;
   const currentStepIndex = steps.indexOf(state.currentStep);
-  const progressPercentage = ((currentStepIndex + 1) / totalSteps) * 100;
 
   const isFormValid = useMemo(() => {
     const hasService = !!state.selectedService;
@@ -567,6 +688,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
       isAddCustomerOpen,
       openAddCustomer,
       closeAddCustomer,
+      setVendorForm,
+      isAddVendorOpen,
+      openAddVendor,
+      closeAddVendor,
       completeStep,
       setErrors,
       clearErrors,
@@ -579,7 +704,6 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
       canProceedToNext,
       totalSteps,
       currentStepIndex,
-      progressPercentage,
     }),
     [
       state,
@@ -595,6 +719,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
       isAddCustomerOpen,
       openAddCustomer,
       closeAddCustomer,
+      setVendorForm,
+      isAddVendorOpen,
+      openAddVendor,
+      closeAddVendor,
       setCurrentStep,
       completeStep,
       setErrors,
@@ -608,7 +736,6 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
       canProceedToNext,
       totalSteps,
       currentStepIndex,
-      progressPercentage,
     ]
   );
 

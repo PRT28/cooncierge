@@ -24,10 +24,13 @@ const Table = dynamic(() => import("@/components/Table"), {
   ssr: false,
 });
 
-const BookingFormModal = dynamic(() => import("@/components/BookingFormModal"), {
-  loading: () => <ModalSkeleton />,
-  ssr: false,
-});
+const BookingFormModal = dynamic(
+  () => import("@/components/BookingFormModal"),
+  {
+    loading: () => <ModalSkeleton />,
+    ssr: false,
+  }
+);
 
 const BookingFormSidesheet = dynamic(
   () => import("@/components/BookingFormSidesheet"),
@@ -148,7 +151,9 @@ const getStatusBadgeClass = (status: BookingStatus): string => {
 const OSBookingsPage = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSideSheetOpen, setIsSideSheetOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<BookingService | null>(null);
+  const [selectedService, setSelectedService] = useState<BookingService | null>(
+    null
+  );
 
   const handleServiceSelect = (service: BookingService) => {
     setSelectedService(service);
@@ -224,10 +229,7 @@ const OSBookingsPage = () => {
 
   return (
     <>
-      <div className="flex justify-end gap-4 p-6 w-full mx-[10px] mt-[-12px]">
-        <button className="bg-white text-[#114958] px-6 py-2 rounded-lg shadow hover:bg-gray-100 transition">
-          View Draft
-        </button>
+      <div className="flex justify-end gap-4 p-6 w-full mx-[10px] mt-[-20px]">
         <button
           onClick={() => setIsCreateOpen(true)}
           className="bg-[#114958] text-white px-6 py-2 rounded-lg shadow hover:bg-[#14505e] transition"

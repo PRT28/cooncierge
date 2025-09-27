@@ -4,8 +4,9 @@ import React, { useState, useCallback, useMemo } from "react";
 import { BookingProvider, useBooking } from "@/context/BookingContext";
 import SideSheet from "@/components/SideSheet";
 import GeneralInfoForm from "./forms/GeneralInfoForm";
-import ServiceInfoForm from "./forms/ServiceInfoForm";
-import AddNewCustomerForm from "./forms/AddNewCustomerForm";
+import AddNewCustomerForm from "./forms/AddNewFroms/AddNewCustomerForm";
+import AddNewVendorForm from "./forms/AddNewFroms/AddNewVendorForm";
+import FlightServiceInfoForm from "./forms/FlightServiceInfo/FlightServiceInfoForm";
 
 // Type definitions
 interface Service {
@@ -19,7 +20,7 @@ interface Service {
 interface BookingFormSidesheetProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedService: Service | null;
+  selectedService: Service | null | undefined;
   onFormSubmit?: (formData: any) => void;
   initialData?: any;
 }
@@ -33,6 +34,25 @@ interface TabConfig {
   isEnabled: boolean;
 }
 
+function ServiceInfoFormSwitcher(props: any) {
+  const { selectedService } = props;
+
+  if (!selectedService) return null;
+
+  switch (selectedService.category) {
+    case "travel":
+      return <FlightServiceInfoForm {...props} />;
+
+    // you can keep adding cases for "transport" or "activity" later
+    default:
+      return (
+        <div className="p-4 text-gray-500">
+          No service info form available for this category.
+        </div>
+      );
+  }
+}
+
 const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
   isOpen,
   onClose,
@@ -43,7 +63,7 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>("general");
   const [formData, setFormData] = useState<any>(initialData || {});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const { isAddCustomerOpen } = useBooking();
+  const { isAddCustomerOpen, isAddVendorOpen } = useBooking();
 
   // Memoized tab configuration
   const tabs: TabConfig[] = useMemo(
@@ -57,7 +77,7 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
       {
         id: "service",
         label: "Service Info",
-        component: ServiceInfoForm,
+        component: ServiceInfoFormSwitcher,
         isEnabled: !!selectedService,
       },
     ],
@@ -162,94 +182,83 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
     return `${selectedService.title} - Booking Form`;
   }, [selectedService]);
 
-  // Progress indicator
-  const progress = useMemo(() => {
-    const enabledTabs = tabs.filter((tab) => tab.isEnabled);
-    const currentIndex = enabledTabs.findIndex((tab) => tab.id === activeTab);
-    return ((currentIndex + 1) / enabledTabs.length) * 100;
-  }, [tabs, activeTab]);
-
   return (
     <>
-    <SideSheet isOpen={isOpen} onClose={onClose} title={title} width="xl">
-      <div className="flex flex-col h-full">
-        {/* Tabs */}
-        <div className="border-b border-gray-200 mb-4">
+      <SideSheet isOpen={isOpen} onClose={onClose} title={title} width="xl">
+        <div className="flex flex-col h-full">
+          {/* Tabs */}
           <div className="flex space-x-0 p-6" role="tablist">
             {tabButtons}
           </div>
-        </div>
 
-        {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto" role="tabpanel">
-          {activeTabContent}
-        </div>
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto" role="tabpanel">
+            {activeTabContent}
+          </div>
 
-        {/* Footer Actions */}
-        <div className="border-t border-gray-200 p-4 mt-4">
-          <div className="flex justify-between">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
+          {/* Footer Actions */}
+          <div className="border-t border-gray-200 p-4 mt-4">
+            <div className="flex justify-between">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
 
-            <div className="flex space-x-2">
-              {activeTab !== "general" && (
-                <button
-                  onClick={() => {
-                    const currentIndex = tabs.findIndex(
-                      (tab) => tab.id === activeTab
-                    );
-                    const prevTab = tabs[currentIndex - 1];
-                    if (prevTab?.isEnabled) {
-                      setActiveTab(prevTab.id);
-                    }
-                  }}
-                  className="px-4 py-2 text-[#114958] border border-[#114958] rounded-lg hover:bg-[#114958] hover:text-white transition-colors"
-                  disabled={isSubmitting}
-                >
-                  Previous
-                </button>
-              )}
+              <div className="flex space-x-2">
+                {activeTab !== "general" && (
+                  <button
+                    onClick={() => {
+                      const currentIndex = tabs.findIndex(
+                        (tab) => tab.id === activeTab
+                      );
+                      const prevTab = tabs[currentIndex - 1];
+                      if (prevTab?.isEnabled) {
+                        setActiveTab(prevTab.id);
+                      }
+                    }}
+                    className="px-4 py-2 text-[#114958] border border-[#114958] rounded-lg hover:bg-[#114958] hover:text-white transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    Previous
+                  </button>
+                )}
 
-              {activeTab !== "review" ? (
-                <button
-                  onClick={() => {
-                    const currentIndex = tabs.findIndex(
-                      (tab) => tab.id === activeTab
-                    );
-                    const nextTab = tabs[currentIndex + 1];
-                    if (nextTab?.isEnabled) {
-                      setActiveTab(nextTab.id);
-                    }
-                  }}
-                  className="px-4 py-2 bg-[#114958] text-white rounded-lg hover:bg-[#0d3a45] transition-colors"
-                  disabled={isSubmitting}
-                >
-                  Next
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleFormSubmit(formData)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                  disabled={isSubmitting || !selectedService}
-                >
-                  {isSubmitting ? "Submitting..." : "Submit Booking"}
-                </button>
-              )}
+                {activeTab !== "review" ? (
+                  <button
+                    onClick={() => {
+                      const currentIndex = tabs.findIndex(
+                        (tab) => tab.id === activeTab
+                      );
+                      const nextTab = tabs[currentIndex + 1];
+                      if (nextTab?.isEnabled) {
+                        setActiveTab(nextTab.id);
+                      }
+                    }}
+                    className="px-4 py-2 bg-[#114958] text-white rounded-lg hover:bg-[#0d3a45] transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleFormSubmit(formData)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                    disabled={isSubmitting || !selectedService}
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit Booking"}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </SideSheet>
 
-      
-    </SideSheet>
-
-    {isAddCustomerOpen && <AddNewCustomerForm />}
-
+      {isAddCustomerOpen && <AddNewCustomerForm />}
+      {isAddVendorOpen && <AddNewVendorForm />}
     </>
   );
 };

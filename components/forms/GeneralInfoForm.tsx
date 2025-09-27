@@ -2,7 +2,10 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { IoEye } from "react-icons/io5";
+import { CiCirclePlus } from "react-icons/ci";
 import { BsPlusSquareFill } from "react-icons/bs";
+import { FiMinus } from "react-icons/fi";
+import { GoPlus } from "react-icons/go";
 import { validateGeneralInfo } from "@/services/bookingApi";
 import { useBooking } from "@/context/BookingContext";
 
@@ -58,7 +61,7 @@ const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [validatingCustomer, setValidatingCustomer] = useState<boolean>(false);
   const [validatingVendor, setValidatingVendor] = useState<boolean>(false);
-  const { openAddCustomer } = useBooking();
+  const { openAddCustomer, openAddVendor } = useBooking();
 
   // Get validation functions from booking context
   const { validateCustomer, validateVendor } = useBooking();
@@ -209,33 +212,23 @@ const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({
   }, [formData, validateField, validationRules]);
 
   // Handle input changes
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const { name, value, type } = e.target;
-      const processedValue =
-        type === "number" && value !== "" ? Number(value) : value;
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type } = e.target;
+    const processedValue = type === "number" ? value : value;
 
-      setFormData((prev) => {
-        const newData = { ...prev, [name]: processedValue };
-        return newData;
-      });
+    // build next state from current formData
+    const next = { ...formData, [name]: processedValue };
+    setFormData(next);
 
-      // Clear error when user starts typing
-      if (errors[name]) {
-        setErrors((prev) => ({ ...prev, [name]: "" }));
-      }
+    onFormDataUpdate?.(next);
 
-      // Mark field as touched
-      setTouched((prev) => ({ ...prev, [name]: true }));
-    },
-    [errors, onFormDataUpdate]
-  );
-
-  useEffect(() => {
-    if (onFormDataUpdate) {
-      onFormDataUpdate(formData);
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-  }, []);
+    setTouched((prev) => ({ ...prev, [name]: true }));
+  };
 
   // Enhanced blur handler with API validation
   const handleBlur = useCallback(
@@ -396,181 +389,240 @@ const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({
   return (
     <form className="space-y-6 p-6" onSubmit={handleSubmit}>
       {/* Customer Section */}
-      <div className="border border-gray-200 rounded-md p-4">
+      <div className="border border-gray-200 rounded-[12px] p-4 mt-[-20px] ">
+        <h2 className="mt-[-5px]">Billed To</h2>
+        <hr className="mt-1 mb-2 border-t border-gray-200" />
         <label className="block text-sm font-medium text-gray-700">
           Name / Customer ID <span className="text-red-500">*</span>
         </label>
-        <hr className="mt-1 mb-2 border-t border-gray-200" />
-        <div className="flex items-center mt-3 w-full">
-          <InputField
-            name="customer"
-            placeholder="Search by Customer Name/ID"
-            required
-            className="flex-1 mr-[-200px]"
-          />
+
+        <div className="flex items-center mt-1 w-full">
+          <div className="w-[600px]">
+            <InputField
+              name="customer"
+              placeholder="Search by Customer Name/ID"
+              required
+              className=" w-full"
+            />
+          </div>
           <div className="flex space-x-2 ml-auto">
             <button
               type="button"
-              className="p-2 hover:bg-gray-100 rounded  transition-colors"
+              className="w-7 h-7 mt-1.5 flex items-center justify-center hover:bg-gray-200 rounded-md bg-gray-100  transition-colors"
               aria-label="View customer details"
             >
-              <IoEye size={20} />
+              <IoEye size={22} className="text-gray-700" />
             </button>
             <button
               type="button"
               onClick={openAddCustomer}
-              className="p-2 -ml-2 hover:bg-gray-100 rounded transition-colors"
+              className="w-10 h-10 -ml-2 flex items-center justify-center rounded-md  transition-colors"
               aria-label="Add new customer"
             >
-              <BsPlusSquareFill size={20} />
+              <BsPlusSquareFill size={26} className="" />
             </button>
           </div>
         </div>
         <button
           type="button"
-          className="mt-2 text-blue-600 text-sm hover:text-blue-800 transition-colors"
+          className="mt-2 flex gap-1 text-[#818181] text-[14px] hover:text-gray-800 transition-colors"
         >
-          + Add New Customer
+          <CiCirclePlus size={20} /> Add New Customer
         </button>
       </div>
 
       {/* Vendor Section */}
-      <div className="border border-gray-200 rounded-md p-4">
+      <div className="border border-gray-200 rounded-[12px] p-4">
+        <h2 className="mt-[-5px]">Vendors</h2>
+        <hr className="mt-1 mb-2 border-t border-gray-200" />
+
         <label className="block text-sm font-medium text-gray-700">
           Name / Vendor ID <span className="text-red-500">*</span>
         </label>
-        <hr className="mt-1 mb-2 border-t border-gray-200" />
-        <div className="flex items-center gap-2 mt-3">
-          <InputField
-            name="vendor"
-            placeholder="Search by Vendor Name/ID"
-            required
-            className="flex-1"
-          />
-          <div className="flex">
+
+        <div className="flex items-center gap-2 mt-1">
+          <div className="w-[600px]">
+            <InputField
+              name="vendor"
+              placeholder="Search by Vendor Name/ID"
+              required
+              className="w-full"
+            />
+          </div>
+          <div className="flex space-x-2 ml-auto">
             <button
               type="button"
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
-              aria-label="View vendor details"
+              className="w-7 h-7 mt-1.5 flex items-center justify-center hover:bg-gray-200 rounded-md bg-gray-100  transition-colors"
+              aria-label="View customer details"
             >
-              <IoEye size={20} />
+              <IoEye size={22} className="text-gray-700" />
             </button>
             <button
               type="button"
-              className="p-2 -ml-2 hover:bg-gray-100 rounded transition-colors"
+              onClick={openAddVendor}
+              className="w-10 h-10 -ml-2 flex items-center justify-center rounded-md  transition-colors"
               aria-label="Add new vendor"
             >
-              <BsPlusSquareFill size={20} />
+              <BsPlusSquareFill size={26} />
             </button>
           </div>
         </div>
       </div>
 
       {/* Travellers Section */}
-      <div className="border border-gray-200 rounded-md p-4">
-        <label className="block text-sm font-medium text-gray-700">
-          Travellers{" "}
-          <span className="text-gray-500">({totalTravellers} total)</span>
-        </label>
+      <div className="border border-gray-200 rounded-[12px] p-4">
+        <h2 className="mt-[-5px]">Travellers</h2>
         <hr className="mt-1 mb-2 border-t border-gray-200" />
 
         <div className="flex gap-6 mt-3">
           <div>
             <label className="block text-xs text-gray-500">Adults *</label>
-            <InputField
-              name="adults"
-              type="number"
-              min={1}
-              required
-              className="w-20"
-            />
+            <div className="flex items-center border border-gray-300 rounded-2xl px-2 py-1">
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    adults: Math.max(1, formData.adults - 1),
+                  })
+                }
+                className="px-1 text-lg font-semibold"
+              >
+                <FiMinus size={15} />
+              </button>
+              <span className="px-2">{formData.adults}</span>
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({ ...formData, adults: formData.adults + 1 })
+                }
+                className="px-1 text-lg font-semibold"
+              >
+                <GoPlus size={15} />
+              </button>
+            </div>
           </div>
           <div>
             <label className="block text-xs text-gray-500">Children</label>
-            <InputField
-              name="children"
-              type="number"
-              min={0}
-              className="w-20"
-            />
+            <button className="align-items-center border border-gray-200 border-radius-2 rounded-2xl px-6 py-2 text-sm">
+              ADD
+            </button>
           </div>
           <div>
             <label className="block text-xs text-gray-500">Infants</label>
-            <InputField name="infants" type="number" min={0} className="w-20" />
+            <div className="flex items-center border border-gray-300 rounded-2xl px-1 py-1">
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    infants: Math.max(0, formData.infants - 1),
+                  })
+                }
+                className="px-2 text-lg font-semibold"
+              >
+                <FiMinus size={15} />
+              </button>
+              <span className="px-2">{formData.infants}</span>
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({ ...formData, infants: formData.infants + 1 })
+                }
+                className="px-2 text-lg font-semibold"
+              >
+                <GoPlus size={15} />
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Traveller Details */}
         <div className="mt-4 space-y-4">
           <div className="flex items-center gap-1">
-            <InputField
-              name="traveller1"
-              placeholder="Adult 1 (Lead Pax) *"
-              required
-              className="flex-1"
-            />
-            <button
-              type="button"
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
-            >
-              <IoEye size={20} />
-            </button>
-            <button
-              type="button"
-              className="p-2 -ml-2 hover:bg-gray-100 rounded transition-colors"
-            >
-              <BsPlusSquareFill size={20} />
-            </button>
+            <div className="w-[600px]">
+              <InputField
+                name="traveller1"
+                placeholder="Adult 1 (Lead Pax) *"
+                required
+                className="flex-1"
+              />
+            </div>
+            <div className="flex space-x-2 ml-auto">
+              <button
+                type="button"
+                className="w-7 h-7 mt-1.5 flex items-center justify-center hover:bg-gray-200 rounded-md bg-gray-100  transition-colors"
+                aria-label="View customer details"
+              >
+                <IoEye size={22} className="text-gray-700" />
+              </button>
+              <button
+                type="button"
+                className="w-10 h-10 -ml-2 flex items-center justify-center rounded-md  transition-colors"
+              >
+                <BsPlusSquareFill size={26} />
+              </button>
+            </div>
           </div>
 
           {formData.adults > 1 && (
             <div className="flex items-center gap-1">
-              <InputField
-                name="traveller2"
-                placeholder="Adult 2"
-                className="flex-1"
-              />
-              <button
-                type="button"
-                className="p-2 hover:bg-gray-100 rounded transition-colors"
-              >
-                <IoEye size={20} />
-              </button>
-              <button
-                type="button"
-                className="p-2 -ml-2 hover:bg-gray-100 rounded transition-colors"
-              >
-                <BsPlusSquareFill size={20} />
-              </button>
+              <div className="w-[600px]">
+                <InputField
+                  name="traveller2"
+                  placeholder="Adult 2"
+                  className="flex-1"
+                />
+              </div>
+              <div className="flex space-x-2 ml-auto">
+                <button
+                  type="button"
+                  className="w-7 h-7 mt-1.5 flex items-center justify-center hover:bg-gray-200 rounded-md bg-gray-100  transition-colors"
+                  aria-label="View customer details"
+                >
+                  <IoEye size={22} className="text-gray-700" />
+                </button>
+                <button
+                  type="button"
+                  className="w-10 h-10 -ml-2 flex items-center justify-center rounded-md  transition-colors"
+                >
+                  <BsPlusSquareFill size={26} />
+                </button>
+              </div>
             </div>
           )}
 
           {formData.infants > 0 && (
             <div className="flex items-center gap-1">
-              <InputField
-                name="traveller3"
-                placeholder="Infant 1"
-                className="flex-1"
-              />
-              <button
-                type="button"
-                className="p-2 hover:bg-gray-100 rounded transition-colors"
-              >
-                <IoEye size={20} />
-              </button>
-              <button
-                type="button"
-                className="p-2 -ml-2 hover:bg-gray-100 rounded transition-colors"
-              >
-                <BsPlusSquareFill size={20} />
-              </button>
+              <div className="w-[600px]">
+                <InputField
+                  name="traveller3"
+                  placeholder="Infant 1"
+                  className="flex-1"
+                />
+              </div>
+              <div className="flex space-x-2 ml-auto">
+                <button
+                  type="button"
+                  className="w-7 h-7 mt-1.5 flex items-center justify-center hover:bg-gray-200 rounded-md bg-gray-100  transition-colors"
+                  aria-label="View customer details"
+                >
+                  <IoEye size={22} className="text-gray-700" />
+                </button>
+                <button
+                  type="button"
+                  className="w-10 h-10 -ml-2 flex items-center justify-center rounded-md  transition-colors"
+                >
+                  <BsPlusSquareFill size={26} />
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
 
       {/* Booking Owner */}
-      <div className="border border-gray-200 rounded-md p-4">
+      <div className="border border-gray-200 rounded-[12px] p-4">
         <label className="block text-sm font-medium text-gray-700">
           Booking Owner <span className="text-red-500">*</span>
         </label>
@@ -579,12 +631,12 @@ const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({
           name="bookingOwner"
           placeholder="Owner Name"
           required
-          className="mt-2"
+          className="mt-1"
         />
       </div>
 
       {/* Remarks */}
-      <div className="border border-gray-200 rounded-md p-4">
+      <div className="border border-gray-200 rounded-[12px] p-4">
         <label className="block text-sm font-medium text-gray-700">
           Remarks
         </label>

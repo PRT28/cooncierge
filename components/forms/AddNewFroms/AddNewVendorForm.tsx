@@ -1,23 +1,25 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useCallback, useMemo } from "react";
-import { validateCustomerForm } from "@/services/bookingApi";
+import { validateVendorForm } from "@/services/bookingApi";
+import { CiCirclePlus } from "react-icons/ci";
+import { MdOutlineFileUpload } from "react-icons/md";
 import SideSheet from "@/components/SideSheet";
 import { useBooking } from "@/context/BookingContext";
 import { useRef } from "react";
 // Type definitions
-interface CustomerFormData {
+interface VendorFormData {
+  companyname: string;
+  companyemail: string;
+  contactnumber: number | "";
+  gstin: number | "";
   firstname: string;
   lastname: string;
   nickname: string;
-  contactnumber: number | "";
   emailId: string;
   dateofbirth: number | "";
-  gstin: number | "";
-  companyname: string;
-  adhaarnumber: number | "";
-  pan: number | string;
-  passport: number | string;
+  document: number | "";
   billingaddress: string | number;
   remarks: string;
 }
@@ -26,30 +28,29 @@ interface ValidationErrors {
   [key: string]: string;
 }
 
-interface AddNewCustomerFormProps {
-  onSubmit?: (data: CustomerFormData) => void;
+interface AddNewVendorFormProps {
+  onSubmit?: (data: VendorFormData) => void;
   isSubmitting?: boolean;
   showValidation?: boolean;
 }
 
-const AddNewCustomerForm: React.FC<AddNewCustomerFormProps> = ({
+const AddNewVendorForm: React.FC<AddNewVendorFormProps> = ({
   onSubmit,
   isSubmitting = false,
   showValidation = true,
 }) => {
   // Internal form state
-  const [formData, setFormData] = useState<CustomerFormData>({
+  const [formData, setFormData] = useState<VendorFormData>({
     firstname: "",
     lastname: "",
     nickname: "",
     contactnumber: "",
     emailId: "",
     dateofbirth: "",
+    companyemail: "",
+    document: "",
     gstin: "",
     companyname: "",
-    adhaarnumber: "",
-    pan: "",
-    passport: "",
     billingaddress: "",
     remarks: "",
   });
@@ -57,7 +58,7 @@ const AddNewCustomerForm: React.FC<AddNewCustomerFormProps> = ({
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isValidating, setIsValidating] = useState<boolean>(false);
-  const { isAddCustomerOpen, closeAddCustomer } = useBooking();
+  const { isAddVendorOpen, closeAddVendor } = useBooking();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   type FieldRule = {
@@ -90,6 +91,11 @@ const AddNewCustomerForm: React.FC<AddNewCustomerFormProps> = ({
         pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
         message: "Invalid email format",
       },
+      companyemail: {
+        required: true,
+        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        message: "Invalid email format",
+      },
     }),
     []
   );
@@ -98,7 +104,7 @@ const AddNewCustomerForm: React.FC<AddNewCustomerFormProps> = ({
   const validateField = useCallback(
     (name: string, value: any): string => {
       // Use API validation for comprehensive checks
-      const apiErrors = validateCustomerForm({
+      const apiErrors = validateVendorForm({
         [name]: value,
         firstname: "",
         lastname: "",
@@ -106,11 +112,10 @@ const AddNewCustomerForm: React.FC<AddNewCustomerFormProps> = ({
         contactnumber: 0,
         emailId: "",
         dateofbirth: 0,
+        companyemail: "",
+        document: "",
         gstin: 0,
         companyname: "",
-        adhaarnumber: 0,
-        pan: "",
-        passport: "",
         billingaddress: "",
         remarks: "",
       });
@@ -155,7 +160,7 @@ const AddNewCustomerForm: React.FC<AddNewCustomerFormProps> = ({
     Object.keys(validationRules).forEach((fieldName) => {
       const error = validateField(
         fieldName,
-        formData[fieldName as keyof CustomerFormData]
+        formData[fieldName as keyof VendorFormData]
       );
       if (error) {
         newErrors[fieldName] = error;
@@ -226,7 +231,7 @@ const AddNewCustomerForm: React.FC<AddNewCustomerFormProps> = ({
 
   // Enhanced input field component with validation indicators
   const InputField: React.FC<{
-    name: keyof CustomerFormData;
+    name: keyof VendorFormData;
     id?: string;
     type?: string;
     placeholder?: string;
@@ -322,15 +327,87 @@ const AddNewCustomerForm: React.FC<AddNewCustomerFormProps> = ({
 
   return (
     <SideSheet
-      isOpen={isAddCustomerOpen}
-      onClose={closeAddCustomer}
-      title={"Add Customer"}
+      isOpen={isAddVendorOpen}
+      onClose={closeAddVendor}
+      title={"Add Vendor"}
       width="xl"
     >
       <form className="space-y-6 p-6" onSubmit={handleSubmit}>
-        {/* Customer Section */}
-        <div className="border border-gray-200 rounded-md p-4">
+        {/* Company info Section */}
+        <div className="border border-gray-200 rounded-[12px] p-4">
           <h2>Basic Details</h2>
+          <hr className="mt-1 mb-4 border-t border-gray-200" />
+
+          {/* First row: 3 fields side-by-side */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="flex flex-col gap-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Company Name <span className="text-red-500">*</span>
+              </label>
+              <InputField
+                name="companyname"
+                placeholder="Enter First Name"
+                required
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Company Email ID <span className="text-red-500">*</span>
+              </label>
+              <InputField
+                name="companyemail"
+                placeholder="Enter Email ID"
+                required
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Contact Number <span className="text-red-500">*</span>
+              </label>
+              <InputField
+                name="contactnumber"
+                placeholder="Enter Contact Number"
+                required
+                className="flex-1"
+              />
+            </div>
+          </div>
+
+          {/* Second row: next 3 fields side-by-side */}
+
+          <div className="flex flex-col gap-1">
+            <label className="block text-sm font-medium text-gray-700 ">
+              GSTIN
+            </label>
+
+            <div className="flex ">
+              <div className="w-[400px]">
+                <InputField
+                  name="gstin"
+                  placeholder="Please Provide Your GST No."
+                  required
+                  className="w-full"
+                />
+              </div>
+
+              <button
+                type="button"
+                className="px-2 py-2 w-25 bg-blue-700 text-white rounded-md text-sm hover:bg-blue-800 relative z-10 "
+              >
+                Fetch
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* POC details Section */}
+
+        <div className="border border-gray-200 rounded-[12px] p-4">
+          <h2>POC Details (Optional)</h2>
           <hr className="mt-1 mb-4 border-t border-gray-200" />
 
           {/* First row: 3 fields side-by-side */}
@@ -378,6 +455,7 @@ const AddNewCustomerForm: React.FC<AddNewCustomerFormProps> = ({
               <label className="block text-sm font-medium text-gray-700">
                 Contact Number <span className="text-red-500">*</span>
               </label>
+
               <InputField
                 name="contactnumber"
                 placeholder="Enter Contact Number"
@@ -412,139 +490,61 @@ const AddNewCustomerForm: React.FC<AddNewCustomerFormProps> = ({
           </div>
         </div>
 
-        {/* Company Section */}
-        <div className="border border-gray-200 rounded-md p-4">
-          <h2>Company Details (Optional)</h2>
+        {/* Documents Section */}
+        <div className="border border-gray-200 rounded-[12px] p-4">
+          <h2>Documents</h2>
           <hr className="mt-1 mb-2 border-t border-gray-200" />
-          <label className="block text-sm font-medium text-gray-700">
-            GSTIN
-          </label>
-        
-          <div className="flex items-center gap-3 mt-3">
-            <div>
-            <InputField
-              name="gstin"
-              placeholder="Please Provide Your GST No."
-              required
-              className="flex-1"
-            />
 
-            <button
-              type="button"
-              className="mt- px-3 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-700 relative z-10 "
-            >
-              Fetch
-            </button>
-
-            </div>
-
-            <label className="block text-sm font-medium text-gray-700">
-              Company Name
-            </label>
-    
-            <div className="flex items-center gap-2 mt-3">
-              <InputField
-                name="companyname"
-                placeholder="Enter Company Name"
-                required
-                className="flex-1"
-              />
+          <div className="flex flex-col gap-6 mt-3">
+            <div className="flex gap-5">
+              <div className="flex flex-col gap-1 w-full">
+                <label className="block text-xs text-gray-500 mt-2">
+                  Document Number <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center">
+                  <div className="w-[300px]">
+                    <InputField
+                      id="adhaaruploader"
+                      name="document"
+                      type="text"
+                      placeholder="Enter Document Number"
+                      required
+                      className="w-full"
+                    />
+                  </div>
+                  <input type="file" ref={fileInputRef} className="hidden" />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-2 flex gap-1 bg-blue-700 text-white rounded-md text-sm hover:bg-blue-800"
+                  >
+                    <MdOutlineFileUpload size={20} /> Upload
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Travellers Section */}
-        <div className="border border-gray-200 rounded-md p-4">
-          <h2>ID Proofs</h2>
-          <hr className="mt-1 mb-2 border-t border-gray-200" />
+        {/* Tier drop down */}
+        <select name="" id=""></select>
 
-          <div className="flex gap-6 mt-3">
-            <div className="flex flex-col gap-1">
-              <label className="block text-xs text-gray-500">
-                ADHAAR <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <InputField
-                  id="adhaaruploader"
-                  name="adhaarnumber"
-                  type="text"
-                  placeholder="Enter ADHAAR Number"
-                  required
-                  className=""
-                />
-                <input type="file" ref={fileInputRef} className="hidden" />
-                {/* Button that triggers file picker */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="mt- px-3 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-700 relative z-10"
-                >
-                  Upload
-                </button>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="block text-xs text-gray-500">
-                PAN CARD <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <InputField
-                  name="pan"
-                  placeholder="Enter PAN Number"
-                  required
-                  type="number"
-                  className=""
-                />
-
-                <input type="file" ref={fileInputRef} className="hidden" />
-
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="mt- px-3 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-700 relative z-10"
-                >
-                  Upload
-                </button>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="block text-xs text-gray-500 mb-1">
-                Passport <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <InputField
-                  name="passport"
-                  placeholder="Enter Passport Number"
-                  required
-                  type="number"
-                  className="flex-1"
-                />
-
-                <input type="file" ref={fileInputRef} className="hidden" />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-2 py-2 bg-red-500 text-white rounded-md text-sm hover:bg-blue-700 relative z-10"
-                >
-                  Upload
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="border border-gray-200 rounded-md p-4">
+        <div className="border border-gray-200 rounded-[12px] p-4">
           <label className="block text-sm font-medium text-gray-700">
             Billing Address
           </label>
           <hr className="mt-1 mb-2 border-t border-gray-200" />
-          <button type="button" className="px-3 py-2 mt-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-700">
+          <button
+            type="button"
+            className="px-3 flex gap-1 py-2 mt-2 bg-blue-700 text-white rounded-md text-sm hover:bg-blue-800"
+          >
             {" "}
-            Billing Address{" "}
+            <CiCirclePlus size={20} /> Billing Address{" "}
           </button>
         </div>
 
         {/* Remarks */}
-        <div className="border border-gray-200 rounded-md p-4">
+        <div className="border border-gray-200 rounded-[12px] p-4">
           <label className="block text-sm font-medium text-gray-700">
             Remarks
           </label>
@@ -566,21 +566,19 @@ const AddNewCustomerForm: React.FC<AddNewCustomerFormProps> = ({
         </div>
 
         {/* Submit Button (if standalone) */}
-        
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2 text-right  bg-[#114958] text-white rounded-lg hover:bg-[#0d3a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? "Saving..." : "Save"}
-            </button>
-          </div>
 
-      
+        <div className="flex justify-end gap-2">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-6 py-2 text-right  bg-[#114958] text-white rounded-lg hover:bg-[#0d3a45] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? "Saving..." : "Save"}
+          </button>
+        </div>
       </form>
     </SideSheet>
   );
 };
 
-export default React.memo(AddNewCustomerForm);
+export default React.memo(AddNewVendorForm);
