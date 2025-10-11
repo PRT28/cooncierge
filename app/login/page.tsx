@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { IoMdArrowBack } from "react-icons/io";
 
@@ -11,34 +11,54 @@ export default function SignIn() {
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showError, setShowError] = useState(false);
+
+  useEffect(() => {
+    if (showError) {
+      const timer = setTimeout(() => setShowError(false), 4000);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [showError]);
 
   // Optimized OTP input change handler
-  const handleOtpChange = useCallback((value: string, index: number) => {
-    if (/^\d*$/.test(value)) {
-      setOtp(prev => {
-        const newOtp = [...prev];
-        newOtp[index] = value;
-        return newOtp;
-      });
+  const handleOtpChange = useCallback(
+    (value: string, index: number) => {
+      if (/^\d*$/.test(value)) {
+        setOtp((prev) => {
+          const newOtp = [...prev];
+          newOtp[index] = value;
+          return newOtp;
+        });
 
-      // Auto-focus next field
-      if (value && index < otp.length - 1) {
-        const nextInput = document.getElementById(
-          `otp-input-${index + 1}`
-        ) as HTMLInputElement | null;
-        nextInput?.focus();
+        // Auto-focus next field
+        if (value && index < otp.length - 1) {
+          const nextInput = document.getElementById(
+            `otp-input-${index + 1}`
+          ) as HTMLInputElement | null;
+          nextInput?.focus();
+        }
       }
-    }
-  }, [otp.length]);
+    },
+    [otp.length]
+  );
 
   const handleForgotPassword = useCallback(() => {
     setMode("forgot");
   }, []);
 
-  const handleSignIn = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    setMode("otp");
-  }, []);
+  const handleSignIn = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!email || !password) {
+        setShowError(true);
+        return;
+      }
+      setShowError(false);
+      setMode("otp");
+    },
+    [email, password]
+  );
 
   const handleSuccess = useCallback(async (): Promise<void> => {
     // fake API call
@@ -48,6 +68,46 @@ export default function SignIn() {
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#E8F5F1] flex items-center justify-center">
+      {/* Error Alert Popup */}
+      {showError && (
+        <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-[100] flex items-center justify-between bg-red-50 border border-red-200 text-red-600 px-6 py-2 rounded-full shadow-lg min-w-[400px] max-w-[90vw]">
+          <div className="flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="2"
+                fill="none"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 8v4m0 4h.01"
+              />
+            </svg>
+            <span className="font-semibold">Error :</span>
+            <span className="ml-2">
+              Please enter your Email and Password to Sign In
+            </span>
+          </div>
+          <button
+            type="button"
+            className="ml-4 text-red-400 hover:text-red-600 text-lg font-bold"
+            aria-label="Close alert"
+            onClick={() => setShowError(false)}
+          >
+            ×
+          </button>
+        </div>
+      )}
       {/* Top Vectors */}
       <div className="absolute top-[-20px] left-0 w-full overflow-hidden">
         <Image
@@ -189,7 +249,6 @@ export default function SignIn() {
                   autoComplete="off"
                   data-lpignore="true"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-green-400 focus:outline-none text-black"
-                  required
                 />
               </div>
 
@@ -205,7 +264,6 @@ export default function SignIn() {
                   placeholder="Enter Password"
                   autoComplete="new-password"
                   className="w-full border border-gray-300 rounded-md px-3 mb-2 py-2 focus:ring-2 focus:ring-green-400 focus:outline-none text-black"
-                  required
                 />
                 <div>
                   <div className="flex items-center gap-2 mt-1 mb-1">
@@ -315,8 +373,8 @@ export default function SignIn() {
                     />
                   </div>
                   <p className="text-sm text-center text-black mb-4 mt-4">
-                    Don&apos;t worry! Just enter your email and we&apos;ll notify your
-                    admin to reset your password.
+                    Don&apos;t worry! Just enter your email and we&apos;ll
+                    notify your admin to reset your password.
                   </p>
                   <div className="flex justify-end">
                     <button

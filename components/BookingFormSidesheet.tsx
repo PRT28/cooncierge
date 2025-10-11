@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useState, useCallback, useMemo } from "react";
+import ConfirmPopupModal from "./popups/ConfirmPopupModal";
+import SuccessPopupModal from "./popups/SuccessPopupModal";
 import { BookingProvider, useBooking } from "@/context/BookingContext";
 import SideSheet from "@/components/SideSheet";
 import GeneralInfoForm from "./forms/GeneralInfoForm";
 import AddNewCustomerForm from "./forms/AddNewFroms/AddNewCustomerForm";
 import AddNewVendorForm from "./forms/AddNewFroms/AddNewVendorForm";
 import FlightServiceInfoForm from "./forms/FlightServiceInfo/FlightServiceInfoForm";
+import AccommodationServiceInfo from "./forms/AccommodationServiceInfo/AccommodationServiceInfo";
 
 // Type definitions
 interface Service {
@@ -43,6 +46,9 @@ function ServiceInfoFormSwitcher(props: any) {
     case "travel":
       return <FlightServiceInfoForm {...props} />;
 
+    case "accommodation":
+      return <AccommodationServiceInfo {...props} />;
+
     // you can keep adding cases for "transport" or "activity" later
     default:
       return (
@@ -63,6 +69,8 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>("general");
   const [formData, setFormData] = useState<any>(initialData || {});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const { isAddCustomerOpen, isAddVendorOpen } = useBooking();
 
   // Memoized tab configuration
@@ -182,9 +190,19 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
     return `${selectedService.title} - Booking Form`;
   }, [selectedService]);
 
+  // Confirm modal title text
+  const confirmModalText =
+    "Do you want to save Data - #1234 to drafts before closing?";
+
   return (
     <>
-      <SideSheet isOpen={isOpen} onClose={onClose} title={title} width="xl">
+      <SideSheet
+        isOpen={isOpen}
+        onClose={onClose}
+        onCloseButtonClick={() => setIsConfirmModalOpen(true)}
+        title={title}
+        width="xl"
+      >
         <div className="flex flex-col h-full">
           {/* Tabs */}
           <div className="flex space-x-0 p-6" role="tablist">
@@ -200,7 +218,7 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
           <div className="border-t border-gray-200 p-4 mt-4">
             <div className="flex justify-between">
               <button
-                onClick={onClose}
+                onClick={() => setIsConfirmModalOpen(true)}
                 className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 disabled={isSubmitting}
               >
@@ -256,6 +274,31 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
           </div>
         </div>
       </SideSheet>
+
+      {/* Confirm Popup Modal */}
+      <ConfirmPopupModal
+        isOpen={isConfirmModalOpen}
+        title={confirmModalText}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onDontSave={() => {
+          setIsConfirmModalOpen(false);
+          onClose();
+        }}
+        onSaveAsDrafts={() => {
+          setIsSuccessModalOpen(true);
+        }}
+      />
+
+      {/* Success Popup Modal */}
+      <SuccessPopupModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => {
+          setIsSuccessModalOpen(false);
+          setIsConfirmModalOpen(false);
+          onClose();
+        }}
+        title="Yaay! The Data - #1234 has been successfully saved to drafts!"
+      />
 
       {isAddCustomerOpen && <AddNewCustomerForm />}
       {isAddVendorOpen && <AddNewVendorForm />}

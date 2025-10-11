@@ -122,6 +122,43 @@ interface FlightInfoForm {
   taxinvoice: File | null;
   remarks: string;
 }
+interface AccommodationInfoForm {
+  bookingdate: string;
+  traveldate: string; // This can be the main/first travel date
+  bookingstatus: "Confirmed" | "Canceled" | "In Progress" | string;
+  checkindate: string;
+  checkintime: string;
+  checkoutdate: string;
+  checkouttime: string;
+  checkOutPeriod: "AM" | "PM";
+  pax: number | string;
+  mealPlan: "EPAI" | "CPAI" | "MAPAI" | "APAI" | string;
+  confirmationNumber: number | string;
+  accommodationType:
+    | "Hotel"
+    | "Resort"
+    | "Hostel"
+    | "Villa"
+    | "Apartment"
+    | "Homestay"
+    | "Experiental Stay"
+    | string;
+  propertyName: string;
+  propertyAddress: string;
+  googleMapsLink: string;
+  segments: RoomSegment[];
+  costprice: number | string;
+  sellingprice: number | string;
+  voucher: File | null;
+  taxinvoice: File | null;
+  remarks: string;
+}
+
+interface RoomSegment {
+  id?: string | null;
+  roomCategory: string;
+  bedType: string;
+}
 
 interface BookingState {
   // UI State
@@ -136,6 +173,7 @@ interface BookingState {
   customerForm: CustomerForm;
   vendorForm: VendorForm;
   flightinfoform: FlightInfoForm;
+  accommodationinfoform: AccommodationInfoForm;
 
   // Form Progress
   currentStep: "service-selection" | "general-info" | "service-info" | "review";
@@ -277,6 +315,35 @@ const initialState: BookingState = {
     pnrEnabled: false,
     samePNRForAllSegments: false,
     flightType: "One Way",
+    voucher: null,
+    taxinvoice: null,
+    remarks: "",
+  },
+  accommodationinfoform: {
+    bookingdate: "",
+    traveldate: "",
+    bookingstatus: "",
+    costprice: "",
+    sellingprice: "",
+    confirmationNumber: "",
+    checkindate: "",
+    checkintime: "",
+    checkoutdate: "",
+    checkouttime: "",
+    checkOutPeriod: "AM",
+    pax: "",
+    mealPlan: "",
+    propertyName: "",
+    propertyAddress: "",
+    googleMapsLink: "",
+    segments: [
+      {
+        id: "room-1",
+        roomCategory: "",
+        bedType: "",
+      },
+    ],
+    accommodationType: "",
     voucher: null,
     taxinvoice: null,
     remarks: "",

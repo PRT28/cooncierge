@@ -10,55 +10,61 @@ interface TableProps {
   maxRowsPerPageOptions?: number[];
 }
 
-const Table: React.FC<TableProps> = ({ 
-  data, 
-  columns, 
+const Table: React.FC<TableProps> = ({
+  data,
+  columns,
   initialRowsPerPage = 10,
-  maxRowsPerPageOptions = [5, 10, 25, 50]
+  maxRowsPerPageOptions = [5, 10, 25, 50],
 }) => {
   const [page, setPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(initialRowsPerPage);
 
   // Memoized calculations
   const totalRows = useMemo(() => data.length, [data.length]);
-  const totalPages = useMemo(() => Math.ceil(totalRows / rowsPerPage), [totalRows, rowsPerPage]);
-  
-  const paginatedRows = useMemo(() => 
-    data.slice((page - 1) * rowsPerPage, page * rowsPerPage),
+  const totalPages = useMemo(
+    () => Math.ceil(totalRows / rowsPerPage),
+    [totalRows, rowsPerPage]
+  );
+
+  const paginatedRows = useMemo(
+    () => data.slice((page - 1) * rowsPerPage, page * rowsPerPage),
     [data, page, rowsPerPage]
   );
 
   // Memoized empty rows for consistent table height
-  const emptyRows = useMemo(() => 
-    Array.from({ length: Math.max(0, rowsPerPage - paginatedRows.length) }),
+  const emptyRows = useMemo(
+    () =>
+      Array.from({ length: Math.max(0, rowsPerPage - paginatedRows.length) }),
     [rowsPerPage, paginatedRows.length]
   );
 
   // Memoized pagination buttons
-  const paginationButtons = useMemo(() => 
-    Array.from({ length: totalPages }).map((_, idx) => (
-      <button
-        key={idx}
-        className={`w-8 h-8 rounded-full font-bold border border-gray-300 flex items-center justify-center transition-colors ${
-          page === idx + 1
-            ? "bg-[#155e75] text-white"
-            : "bg-white text-[#155e75] hover:bg-gray-50"
-        }`}
-        onClick={() => setPage(idx + 1)}
-        aria-label={`Go to page ${idx + 1}`}
-      >
-        {idx + 1}
-      </button>
-    )), [totalPages, page]
+  const paginationButtons = useMemo(
+    () =>
+      Array.from({ length: totalPages }).map((_, idx) => (
+        <button
+          key={idx}
+          className={`w-8 h-8 rounded-full font-bold border border-gray-300 flex items-center justify-center transition-colors ${
+            page === idx + 1
+              ? "bg-[#155e75] text-white"
+              : "bg-white text-[#155e75] hover:bg-gray-50"
+          }`}
+          onClick={() => setPage(idx + 1)}
+          aria-label={`Go to page ${idx + 1}`}
+        >
+          {idx + 1}
+        </button>
+      )),
+    [totalPages, page]
   );
 
   // Optimized handlers
   const handlePreviousPage = useCallback(() => {
-    setPage(prev => Math.max(1, prev - 1));
+    setPage((prev) => Math.max(1, prev - 1));
   }, []);
 
   const handleNextPage = useCallback(() => {
-    setPage(prev => Math.min(totalPages, prev + 1));
+    setPage((prev) => Math.min(totalPages, prev + 1));
   }, [totalPages]);
 
   const handleRowsPerPageChange = useCallback((newRowsPerPage: number) => {
@@ -75,12 +81,15 @@ const Table: React.FC<TableProps> = ({
 
   return (
     <>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
+      <div className="overflow-x-auto rounded-xl border border-gray-100">
+        <table className="min-w-full text-sm rounded-xl overflow-hidden">
           <thead>
-            <tr className="bg-[#155e75] text-white">
+            <tr className="bg-[#0D4B37] text-white rounded-t-xl">
               {columns.map((col, index) => (
-                <th key={`${col}-${index}`} className="px-4 py-3 font-semibold text-left">
+                <th
+                  key={`${col}-${index}`}
+                  className="px-4 py-3 font-semibold text-left"
+                >
                   {col}
                 </th>
               ))}
@@ -97,7 +106,7 @@ const Table: React.FC<TableProps> = ({
                 {row}
               </tr>
             ))}
-            
+
             {/* Fill empty rows to keep table height consistent */}
             {emptyRows.map((_, idx) => (
               <tr
@@ -114,7 +123,7 @@ const Table: React.FC<TableProps> = ({
           </tbody>
         </table>
       </div>
-      
+
       {/* Pagination Controls */}
       <div className="flex items-center justify-between mt-4 flex-wrap gap-4">
         <div className="flex items-center gap-2">
@@ -124,18 +133,16 @@ const Table: React.FC<TableProps> = ({
             value={rowsPerPage}
             onChange={(e) => handleRowsPerPageChange(Number(e.target.value))}
           >
-            {maxRowsPerPageOptions.map(option => (
+            {maxRowsPerPageOptions.map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>
             ))}
           </select>
         </div>
-        
-        <div className="text-gray-600 text-sm">
-          {displayText}
-        </div>
-        
+
+        <div className="text-gray-600 text-sm">{displayText}</div>
+
         <div className="flex items-center gap-2">
           <button
             className="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center text-[#155e75] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -145,9 +152,9 @@ const Table: React.FC<TableProps> = ({
           >
             {"<"}
           </button>
-          
+
           {paginationButtons}
-          
+
           <button
             className="w-8 h-8 rounded-full bg-white border border-gray-300 flex items-center justify-center text-[#155e75] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={page === totalPages}

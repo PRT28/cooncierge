@@ -94,6 +94,46 @@ interface FlightInfoForm {
   remarks: string;
 }
 
+interface AccommodationInfoForm {
+  bookingdate: string;
+  traveldate: string; // This can be the main/first travel date
+  bookingstatus: "Confirmed" | "Canceled" | "In Progress" | string;
+  checkindate: string;
+  checkintime: string;
+  checkoutdate: string;
+  checkouttime: string;
+  checkOutPeriod: "AM" | "PM";
+  pax: number | string;
+mealPlan: "EPAI" | "CPAI" | "MAPAI" | "APAI" | string;
+  confirmationNumber: number | string;
+  accommodationType:
+    | "Hotel"
+    | "Resort"
+    | "Hostel"
+    | "Villa"
+    | "Apartment"
+    | "Homestay"
+    | "Experiental Stay"
+    | string;
+  propertyName: string;
+  propertyAddress: string; 
+  googleMapsLink: string;
+    segments: RoomSegment[];
+  costprice: number | string;
+  sellingprice: number | string;
+  voucher: File | null;
+  taxinvoice: File | null;
+  remarks: string;
+}
+
+interface RoomSegment {
+  id?: string | null;
+  roomCategory: string;
+  bedType: string;
+  
+}
+
+
 interface ServiceInfo {
   serviceType: string;
   destination: string;
@@ -440,6 +480,103 @@ export const validateFlightInfoForm = (data: FlightInfoForm): Record<string, str
 
   if (data.remarks && data.remarks.length > 500) {
     errors.remarks = "Remarks cannot exceed 500 characters";
+  }
+
+  return errors;
+};
+
+export const validateAccommodationInfoForm = (
+  data: AccommodationInfoForm
+): Record<string, string> => {
+  const errors: Record<string, string> = {};
+
+  if (!data.bookingdate) {
+    errors.bookingdate = "Booking date is required";
+  }
+
+  if (!data.traveldate) {
+    errors.traveldate = "Travel date is required";
+  }
+
+  if (!data.bookingstatus?.trim()) {
+    errors.bookingstatus = "Booking status is required";
+  }
+
+  if (!data.checkindate) {
+    errors.checkindate = "Check-in date is required";
+  }
+
+  if (!data.checkintime) {
+    errors.checkintime = "Check-in time is required";
+  }
+
+  if (!data.checkoutdate) {
+    errors.checkoutdate = "Check-out date is required";
+  }
+
+  if (!data.checkouttime) {
+    errors.checkouttime = "Check-out time is required";
+  }
+
+  if (!data.pax) {
+    errors.pax = "Number of Pax is required";
+  } else if (isNaN(Number(data.pax)) || Number(data.pax) <= 0) {
+    errors.pax = "Pax must be a positive number";
+  }
+
+  if (!data.mealPlan) {
+    errors.mealPlan = "Meal plan is required";
+  }
+
+  if (!data.confirmationNumber) {
+    errors.confirmationNumber = "Confirmation number is required";
+  }
+
+  if (!data.accommodationType) {
+    errors.accommodationType = "Accommodation type is required";
+  }
+
+  if (!data.propertyName?.trim()) {
+    errors.propertyName = "Property name is required";
+  }
+
+  if (!data.propertyAddress?.trim()) {
+    errors.propertyAddress = "Property address is required";
+  }
+
+  if (data.googleMapsLink && !/^https?:\/\/(www\.)?google\.com\/maps/.test(data.googleMapsLink)) {
+    errors.googleMapsLink = "Invalid Google Maps link";
+  }
+
+  if (!data.costprice) {
+    errors.costprice = "Cost price is required";
+  } else if (isNaN(Number(data.costprice)) || Number(data.costprice) < 0) {
+    errors.costprice = "Cost price must be a valid positive number";
+  }
+
+  if (!data.sellingprice) {
+    errors.sellingprice = "Selling price is required";
+  } else if (isNaN(Number(data.sellingprice)) || Number(data.sellingprice) < 0) {
+    errors.sellingprice = "Selling price must be a valid positive number";
+  }
+
+  if (data.voucher && !(data.voucher instanceof File)) {
+    errors.voucher = "Voucher must be a valid file";
+  }
+
+  if (data.taxinvoice && !(data.taxinvoice instanceof File)) {
+    errors.taxinvoice = "Tax invoice must be a valid file";
+  }
+
+  // remarks is optional, so no strict check
+
+  // date logic check
+  if (data.checkindate && data.checkoutdate) {
+    const checkIn = new Date(data.checkindate);
+    const checkOut = new Date(data.checkoutdate);
+    if (checkIn > checkOut) {
+      errors.checkoutdate = "Check-out date must be after check-in date";
+    }
   }
 
   return errors;

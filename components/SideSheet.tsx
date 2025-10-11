@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 interface SideSheetProps {
   isOpen: boolean;
   onClose: () => void;
+  onCloseButtonClick?: () => void;
   title?: string;
   children: React.ReactNode;
   width?: "sm" | "md" | "lg" | "xl" | "full";
@@ -24,6 +25,7 @@ type SideSheetWidth = {
 const SideSheet: React.FC<SideSheetProps> = ({
   isOpen,
   onClose,
+  onCloseButtonClick,
   title = "",
   children,
   width = "lg",
@@ -96,6 +98,7 @@ const SideSheet: React.FC<SideSheetProps> = ({
         document.removeEventListener("keydown", handleEscape);
       };
     }
+    return undefined;
   }, [isOpen, closeOnEscape, handleEscape]);
 
   // Memoized sidesheet content
@@ -136,7 +139,7 @@ const SideSheet: React.FC<SideSheetProps> = ({
             </h2>
             {showCloseButton && (
               <button
-                onClick={onClose}
+                onClick={onCloseButtonClick ? onCloseButtonClick : onClose}
                 className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
                 aria-label="Close side sheet"
               >

@@ -23,7 +23,7 @@ interface SubMenuItem {
 interface MenuItem {
   label: string;
   icon: IconType;
-  href?: string;
+  href?: string | undefined;
   subMenu?: SubMenuItem[];
 }
 
@@ -167,14 +167,13 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           {menuItems.map((item, index) => {
             const isActive = openSubMenuIndex === index;
             const showArrow = isOpen && Boolean(item.subMenu);
-            const commonItemClasses = "flex items-center gap-2 px-4 h-12 transition-colors";
+            const commonItemClasses =
+              "flex items-center gap-2 px-4 h-12 transition-colors";
 
             return (
               <li
                 key={item.label}
-                className={`relative group ${
-                  isActive ? "bg-[#387a64]" : ""
-                }`}
+                className={`relative group ${isActive ? "bg-[#387a64]" : ""}`}
                 style={{
                   background:
                     isActive || hoveredIndex === index ? "#387a64" : undefined,
@@ -187,9 +186,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                   <button
                     type="button"
                     className={`${commonItemClasses} w-full text-left text-white`}
-                    onClick={() =>
-                      setOpenSubMenuIndex(isActive ? null : index)
-                    }
+                    onClick={() => setOpenSubMenuIndex(isActive ? null : index)}
                   >
                     <item.icon className="w-6 h-6" />
                     {isOpen && <span className="text-sm">{item.label}</span>}

@@ -37,7 +37,7 @@ const Filter: React.FC<FilterProps> = ({
   serviceTypes = [],
   statuses = [],
   owners = [],
-  initialFilters = {}
+  initialFilters = {},
 }) => {
   // Consolidated filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -52,13 +52,16 @@ const Filter: React.FC<FilterProps> = ({
   });
 
   // Memoized filter update handler
-  const updateFilter = useCallback((key: keyof FilterState, value: string) => {
-    setFilters(prev => {
-      const newFilters = { ...prev, [key]: value };
-      onFilterChange?.(newFilters);
-      return newFilters;
-    });
-  }, [onFilterChange]);
+  const updateFilter = useCallback(
+    (key: keyof FilterState, value: string) => {
+      setFilters((prev) => {
+        const newFilters = { ...prev, [key]: value };
+        onFilterChange?.(newFilters);
+        return newFilters;
+      });
+    },
+    [onFilterChange]
+  );
 
   // Memoized reset handler
   const handleReset = useCallback(() => {
@@ -82,31 +85,42 @@ const Filter: React.FC<FilterProps> = ({
   }, [filters, onFilterChange]);
 
   // Memoized option renderer
-  const renderOptions = useCallback((options: FilterOption[]) => 
-    options.map((option) => (
-      <option
-        key={option.id || option._id || option.value || option.name}
-        value={option.value || option.name || String(option)}
-      >
-        {option.label || option.name || String(option)}
-      </option>
-    )), []
+  const renderOptions = useCallback(
+    (options: FilterOption[]) =>
+      options.map((option) => (
+        <option
+          key={option.id || option._id || option.value || option.name}
+          value={option.value || option.name || String(option)}
+        >
+          {option.label || option.name || String(option)}
+        </option>
+      )),
+    []
   );
 
   // Memoized service type options
-  const serviceTypeOptions = useMemo(() => renderOptions(serviceTypes), [serviceTypes, renderOptions]);
-  
+  const serviceTypeOptions = useMemo(
+    () => renderOptions(serviceTypes),
+    [serviceTypes, renderOptions]
+  );
+
   // Memoized status options
-  const statusOptions = useMemo(() => renderOptions(statuses), [statuses, renderOptions]);
-  
+  const statusOptions = useMemo(
+    () => renderOptions(statuses),
+    [statuses, renderOptions]
+  );
+
   // Memoized owner options
-  const ownerOptions = useMemo(() => renderOptions(owners), [owners, renderOptions]);
+  const ownerOptions = useMemo(
+    () => renderOptions(owners),
+    [owners, renderOptions]
+  );
 
   return (
     <div className="bg-white rounded-2xl shadow p-5 mb-5 w-full">
       <h2 className="text-xl font-bold mb-4 text-left">Filters</h2>
       <hr className="mb-3 border-t-2 border-[#e4dfdb]" />
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Service Type Filter */}
         <div className="text-left">
@@ -118,7 +132,7 @@ const Filter: React.FC<FilterProps> = ({
               id="service-type"
               className="w-full border border-gray-300 rounded-lg px-2 py-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#114958] focus:border-transparent pr-8 appearance-none transition-colors"
               value={filters.serviceType}
-              onChange={(e) => updateFilter('serviceType', e.target.value)}
+              onChange={(e) => updateFilter("serviceType", e.target.value)}
             >
               <option value="">Service Type</option>
               {serviceTypeOptions}
@@ -139,7 +153,7 @@ const Filter: React.FC<FilterProps> = ({
               id="status"
               className="w-full border border-gray-300 rounded-lg px-2 py-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#114958] focus:border-transparent pr-8 appearance-none transition-colors"
               value={filters.status}
-              onChange={(e) => updateFilter('status', e.target.value)}
+              onChange={(e) => updateFilter("status", e.target.value)}
             >
               <option value="">Status</option>
               {statusOptions}
@@ -182,13 +196,16 @@ const Filter: React.FC<FilterProps> = ({
             placeholder="Search by Booking ID / Lead Pax"
             className="w-full border border-gray-300 rounded-lg px-2 py-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#114958] focus:border-transparent transition-colors"
             value={filters.search}
-            onChange={(e) => updateFilter('search', e.target.value)}
+            onChange={(e) => updateFilter("search", e.target.value)}
           />
         </div>
 
         {/* Booking Start Date */}
         <div className="text-left">
-          <label className="block text-gray-700 mb-2" htmlFor="booking-start-date">
+          <label
+            className="block text-gray-700 mb-2"
+            htmlFor="booking-start-date"
+          >
             Booking Start Date
           </label>
           <input
@@ -196,13 +213,16 @@ const Filter: React.FC<FilterProps> = ({
             type="date"
             className="w-full border border-gray-300 rounded-lg px-2 py-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#114958] focus:border-transparent transition-colors"
             value={filters.bookingStartDate}
-            onChange={(e) => updateFilter('bookingStartDate', e.target.value)}
+            onChange={(e) => updateFilter("bookingStartDate", e.target.value)}
           />
         </div>
 
         {/* Booking End Date */}
         <div className="text-left">
-          <label className="block text-gray-700 mb-2" htmlFor="booking-end-date">
+          <label
+            className="block text-gray-700 mb-2"
+            htmlFor="booking-end-date"
+          >
             Booking End Date
           </label>
           <input
@@ -210,7 +230,7 @@ const Filter: React.FC<FilterProps> = ({
             type="date"
             className="w-full border border-gray-300 rounded-lg px-2 py-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#114958] focus:border-transparent transition-colors"
             value={filters.bookingEndDate}
-            onChange={(e) => updateFilter('bookingEndDate', e.target.value)}
+            onChange={(e) => updateFilter("bookingEndDate", e.target.value)}
           />
         </div>
 
@@ -224,7 +244,7 @@ const Filter: React.FC<FilterProps> = ({
             type="date"
             className="w-full border border-gray-300 rounded-lg px-2 py-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#114958] focus:border-transparent transition-colors"
             value={filters.tripStartDate}
-            onChange={(e) => updateFilter('tripStartDate', e.target.value)}
+            onChange={(e) => updateFilter("tripStartDate", e.target.value)}
           />
         </div>
 
@@ -238,23 +258,23 @@ const Filter: React.FC<FilterProps> = ({
             type="date"
             className="w-full border border-gray-300 rounded-lg px-2 py-3 text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#114958] focus:border-transparent transition-colors"
             value={filters.tripEndDate}
-            onChange={(e) => updateFilter('tripEndDate', e.target.value)}
+            onChange={(e) => updateFilter("tripEndDate", e.target.value)}
           />
         </div>
       </div>
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-4 mt-6">
-        <button 
+        <button
           onClick={handleReset}
           className="bg-gray-100 px-4 py-2 rounded-lg shadow hover:bg-gray-200 transition-colors flex items-center justify-center"
           aria-label="Reset filters"
         >
           <RiRefreshLine size={22} className="text-[#114958]" />
         </button>
-        <button 
+        <button
           onClick={handleApply}
-          className="bg-[#114958] text-white px-8 py-2 rounded-lg shadow hover:bg-[#14505e] transition-colors"
+          className="bg-[#0D4B37] text-white px-8 py-2 rounded-lg shadow hover:bg-[#14505e] transition-colors"
         >
           Apply
         </button>

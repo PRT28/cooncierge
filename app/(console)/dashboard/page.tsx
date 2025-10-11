@@ -9,16 +9,20 @@ import { BookingProvider, useBooking } from "@/context/BookingContext";
 import CalendarSkeleton from "@/components/skeletons/CalendarSkeleton";
 import ModalSkeleton from "@/components/skeletons/ModalSkeleton";
 import SidesheetSkeleton from "@/components/skeletons/SidesheetSkeleton";
+import AddTaskModal from "@/components/AddTaskModal";
 
 const Calendar = dynamic(() => import("@/components/Calendar"), {
   loading: () => <CalendarSkeleton />,
   ssr: false,
 });
 
-const BookingFormModal = dynamic(() => import("@/components/BookingFormModal"), {
-  loading: () => <ModalSkeleton />,
-  ssr: false,
-});
+const BookingFormModal = dynamic(
+  () => import("@/components/BookingFormModal"),
+  {
+    loading: () => <ModalSkeleton />,
+    ssr: false,
+  }
+);
 
 const BookingFormSidesheet = dynamic(
   () => import("@/components/BookingFormSidesheet"),
@@ -31,7 +35,7 @@ const BookingFormSidesheet = dynamic(
 type TaskLog = {
   activity: string;
   dateTime: string;
-  status?: 'completed' | 'in-progress' | 'pending';
+  status?: "completed" | "in-progress" | "pending";
   [key: string]: unknown;
 };
 
@@ -52,15 +56,13 @@ interface SummaryData {
 
 const DashboardContent: React.FC = () => {
   const { calenderShow, setCalenderShow } = useCalendar();
-  const {
-    state,
-    openModal,
-    closeModal,
-    closeSidesheet,
-    selectService,
-  } = useBooking();
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
+  const openAddTaskModal = () => setIsAddTaskModalOpen(true);
+  const closeAddTaskModal = () => setIsAddTaskModalOpen(false);
+  const { state, openModal, closeModal, closeSidesheet, selectService } =
+    useBooking();
   const [summaryData, setSummaryData] = useState<SummaryData>({
-    currentUserPendingTaskCount: 0
+    currentUserPendingTaskCount: 0,
   });
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,27 +70,28 @@ const DashboardContent: React.FC = () => {
   const formatDate = useCallback((dateString: string): string => {
     const date = new Date(dateString);
     const day = date.getDate();
-    
+
     const getSuffix = (day: number): string => {
       if (day % 10 === 1 && day !== 11) return "st";
       if (day % 10 === 2 && day !== 12) return "nd";
       if (day % 10 === 3 && day !== 13) return "rd";
       return "th";
     };
-    
+
     const suffix = getSuffix(day);
     const month = date.toLocaleString("default", { month: "short" });
-    
+
     return `${day}${suffix} ${month}`;
   }, []);
 
   const fetchSummaryData = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
-      
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
       if (!token) {
         throw new Error("No authentication token found");
       }
@@ -103,7 +106,7 @@ const DashboardContent: React.FC = () => {
           timeout: 10000,
         }
       );
-      
+
       setSummaryData(response.data);
     } catch (err) {
       console.error("API not available, running in UI-only mode:", err);
@@ -120,7 +123,7 @@ const DashboardContent: React.FC = () => {
 
   const statusBadge = useMemo(() => {
     const pendingCount = summaryData.currentUserPendingTaskCount;
-    
+
     if (pendingCount === 0) {
       return (
         <div className="flex items-center h-8 px-4 py-2 rounded-full bg-[#DCFCE7] text-[#166534] font-poppins text-base font-semibold leading-8">
@@ -128,7 +131,7 @@ const DashboardContent: React.FC = () => {
         </div>
       );
     }
-    
+
     return (
       <div className="flex items-center h-8 px-4 py-2 rounded-full bg-[#fcdcdc] text-[#651616] font-poppins text-base font-semibold leading-8">
         Pending Tasks: {pendingCount}
@@ -138,79 +141,82 @@ const DashboardContent: React.FC = () => {
 
   const dateWiseLogsCards = useMemo(() => {
     if (!summaryData.dateWiseLogs) return null;
-    
-    return Object.entries(summaryData.dateWiseLogs).map(([date, logs], index) => (
-      <div
-        key={`${date}-${index}`}
-        className="flex-shrink-0 w-64 rounded-xl bg-[#F9FAFB] border border-gray-200 shadow-sm p-4"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-800">
-            {formatDate(date)}
-          </h3>
-          <span className="text-gray-400" role="img" aria-label="view">👁</span>
+
+    return Object.entries(summaryData.dateWiseLogs).map(
+      ([date, logs], index) => (
+        <div
+          key={`${date}-${index}`}
+          className="flex-shrink-0 w-64 rounded-xl bg-[#F9FAFB] border border-gray-200 shadow-sm p-4"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-800">{formatDate(date)}</h3>
+            <span className="text-gray-400" role="img" aria-label="view">
+              👁
+            </span>
+          </div>
+          <ul className="space-y-2">
+            {logs.map((task, i) => (
+              <li
+                key={`${date}-${i}`}
+                className={`text-sm font-medium px-3 py-1 rounded-full ${getRandomBgTextClass()}`}
+              >
+                {task.activity}
+              </li>
+            ))}
+          </ul>
         </div>
-        <ul className="space-y-2">
-          {logs.map((task, i) => (
-            <li
-              key={`${date}-${i}`}
-              className={`text-sm font-medium px-3 py-1 rounded-full ${getRandomBgTextClass()}`}
-            >
-              {task.activity}
-            </li>
-          ))}
-        </ul>
-      </div>
-    ));
+      )
+    );
   }, [summaryData.dateWiseLogs, formatDate]);
 
   const teamPerformanceCards = useMemo(() => {
     if (!summaryData.teamPercentCompleteLogs) return null;
-    
-    return Object.entries(summaryData.teamPercentCompleteLogs).map(([member, percentage], idx) => {
-      const color = getRandomDarkBgClass();
-      
-      return (
-        <div key={`${member}-${idx}`} className="mb-4">
-          <div className="flex items-center gap-2 mb-1">
-            <div
-              className={`w-6 h-6 text-white font-medium flex items-center justify-center rounded-full ${color}`}
-            >
-              {member[0]?.toUpperCase()}
+
+    return Object.entries(summaryData.teamPercentCompleteLogs).map(
+      ([member, percentage], idx) => {
+        const color = getRandomDarkBgClass();
+
+        return (
+          <div key={`${member}-${idx}`} className="mb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <div
+                className={`w-6 h-6 text-white font-medium flex items-center justify-center rounded-full ${color}`}
+              >
+                {member[0]?.toUpperCase()}
+              </div>
+              <span className="text-gray-700 font-medium">{member}</span>
+              <span className="ml-auto text-gray-700 font-medium">
+                {percentage}%
+              </span>
             </div>
-            <span className="text-gray-700 font-medium">{member}</span>
-            <span className="ml-auto text-gray-700 font-medium">
-              {percentage}%
-            </span>
+            <div className="w-full h-2 bg-gray-200 rounded-full">
+              <div
+                className={`h-full rounded-full ${color} transition-all duration-500`}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
           </div>
-          <div className="w-full h-2 bg-gray-200 rounded-full">
-            <div
-              className={`h-full rounded-full ${color} transition-all duration-500`}
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
-        </div>
-      );
-    });
+        );
+      }
+    );
   }, [summaryData.teamPercentCompleteLogs]);
 
   const recentActivityItems = useMemo(() => {
     if (!summaryData.recentLogs) return null;
-    
+
     return summaryData.recentLogs.map((item, idx) => {
       const color = getRandomDarkBgClass();
-      
+
       return (
-        <div key={`${item.activity}-${idx}`} className="flex flex-col items-start mb-4">
+        <div
+          key={`${item.activity}-${idx}`}
+          className="flex flex-col items-start mb-4"
+        >
           <div className="flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full ${color}`} />
-            <span className="font-semibold text-gray-800">
-              {item.activity}
-            </span>
+            <span className="font-semibold text-gray-800">{item.activity}</span>
           </div>
-          <p className="text-xs text-gray-400 pl-4">
-            {item.dateTime}
-          </p>
+          <p className="text-xs text-gray-400 pl-4">{item.dateTime}</p>
         </div>
       );
     });
@@ -231,7 +237,7 @@ const DashboardContent: React.FC = () => {
               <div className="flex items-center justify-between gap-2">
                 <button
                   type="button"
-                  onClick={openModal}
+                  onClick={openAddTaskModal}
                   className="flex items-center justify-center h-10 px-5 py-2 rounded-lg bg-[#114958] text-white text-center font-poppins text-base font-normal leading-6 hover:bg-[#0d3a45] transition-colors"
                 >
                   Tasks +
@@ -245,7 +251,7 @@ const DashboardContent: React.FC = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="flex w-full px-5 py-4">
               <div className="flex justify-between items-center gap-4 w-full flex-wrap">
                 {dateWiseLogsCards}
@@ -293,13 +299,14 @@ const DashboardContent: React.FC = () => {
               <div className="w-full h-2 bg-gray-200 rounded-full mb-2">
                 <div
                   className="h-full bg-teal-900 rounded-full transition-all duration-500"
-                  style={{ 
-                    width: summaryData.percentageLogs?.completedPercent || '0%' 
+                  style={{
+                    width: summaryData.percentageLogs?.completedPercent || "0%",
                   }}
                 />
               </div>
               <p className="text-sm text-gray-500 text-center">
-                {summaryData.percentageLogs?.completedPercent || '0%'} completion rate
+                {summaryData.percentageLogs?.completedPercent || "0%"}{" "}
+                completion rate
               </p>
             </div>
 
@@ -310,7 +317,9 @@ const DashboardContent: React.FC = () => {
                   Team Performance
                 </h2>
                 <div className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-green-700">
-                  <span role="img" aria-label="team">👥</span>
+                  <span role="img" aria-label="team">
+                    👥
+                  </span>
                 </div>
               </div>
               {teamPerformanceCards}
@@ -323,7 +332,9 @@ const DashboardContent: React.FC = () => {
                   Recent Activity
                 </h2>
                 <div className="w-8 h-8 flex items-center justify-center bg-orange-100 text-orange-600 rounded-full">
-                  <span role="img" aria-label="clock">🕒</span>
+                  <span role="img" aria-label="clock">
+                    🕒
+                  </span>
                 </div>
               </div>
               {recentActivityItems}
@@ -331,7 +342,7 @@ const DashboardContent: React.FC = () => {
           </div>
         </>
       )}
-      
+
       {calenderShow && (
         <Calendar
           setCalenderShow={setCalenderShow}
@@ -339,22 +350,7 @@ const DashboardContent: React.FC = () => {
         />
       )}
 
-      {/* Booking Components */}
-      {state.isModalOpen && (
-        <BookingFormModal
-          isOpen={state.isModalOpen}
-          onClose={closeModal}
-          onSelectedService={selectService}
-        />
-      )}
-
-      {state.isSidesheetOpen && (
-        <BookingFormSidesheet
-          isOpen={state.isSidesheetOpen}
-          onClose={closeSidesheet}
-          selectedService={state.selectedService}
-        />
-      )}
+      <AddTaskModal isOpen={isAddTaskModalOpen} onClose={closeAddTaskModal} />
     </div>
   );
 };

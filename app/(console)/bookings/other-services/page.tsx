@@ -232,7 +232,7 @@ const OSBookingsPage = () => {
       <div className="flex justify-end gap-4 p-6 w-full mx-[10px] mt-[-20px]">
         <button
           onClick={() => setIsCreateOpen(true)}
-          className="bg-[#114958] text-white px-6 py-2 rounded-lg shadow hover:bg-[#14505e] transition"
+          className="bg-[#0D4B37] text-white px-6 py-2 rounded-lg shadow hover:bg-[#14505e] transition"
           type="button"
         >
           Create +

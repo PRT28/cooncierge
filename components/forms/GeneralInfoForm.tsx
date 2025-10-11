@@ -427,7 +427,7 @@ const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({
           type="button"
           className="mt-2 flex gap-1 text-[#818181] text-[14px] hover:text-gray-800 transition-colors"
         >
-          <CiCirclePlus size={20} /> Add New Customer
+          <CiCirclePlus size={20} /> Add Another Customer
         </button>
       </div>
 
