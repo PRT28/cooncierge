@@ -7,17 +7,17 @@ import ActionMenu from "@/components/ActionMenu";
 import { FiSearch } from "react-icons/fi";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import { getCustomers } from "@/services/customerApi";
+import { getVendors } from "@/services/vendorApi";
 import type { JSX } from "react";
-import AddCustomerSideSheet from "@/components/Sidesheets/AddCustomerSideSheet";
+import AddVendorSideSheet from "@/components/Sidesheets/AddVendorSideSheet";
 
 const Table = dynamic(() => import("@/components/Table"), {
   loading: () => <TableSkeleton />,
   ssr: false,
 });
 
-type CustomerRow = {
-  customerID: string;
+type VendorRow = {
+  vendorID: string;
   name: string;
   rating: string;
   owner: string;
@@ -26,7 +26,7 @@ type CustomerRow = {
 };
 
 const columns: string[] = [
-  "Customer ID",
+  "Vendor ID",
   "Name",
   "Owner",
   "Date Created",
@@ -34,9 +34,9 @@ const columns: string[] = [
   "Actions",
 ];
 
-// const customerTableSeed: CustomerRow[] = [
+// const VendorTableSeed: VendorRow[] = [
 //   {
-//     customerID: "#C001",
+//     vendorID: "#C001",
 //     name: "Amit Verma",
 //     owner: "Riya Kapoor",
 //     rating: "⭐️⭐️⭐️⭐️",
@@ -44,7 +44,7 @@ const columns: string[] = [
 //     actions: "⋮",
 //   },
 //   {
-//     customerID: "#C002",
+//     vendorID: "#C002",
 //     name: "Neha Gupta",
 //     owner: "Arjun Mehta",
 //     rating: "⭐️⭐️⭐️⭐️⭐️",
@@ -52,7 +52,7 @@ const columns: string[] = [
 //     actions: "⋮",
 //   },
 //   {
-//     customerID: "#C003",
+//     vendorID: "#C003",
 //     name: "Suresh Raina",
 //     owner: "Priya Nair",
 //     rating: "⭐️⭐️⭐️",
@@ -60,7 +60,7 @@ const columns: string[] = [
 //     actions: "⋮",
 //   },
 //   {
-//     customerID: "#C004",
+//     vendorID: "#C004",
 //     name: "Anjali Sharma",
 //     owner: "Karan Malhotra",
 //     rating: "⭐️⭐️⭐️⭐️",
@@ -68,7 +68,7 @@ const columns: string[] = [
 //     actions: "⋮",
 //   },
 //   {
-//     customerID: "#C005",
+//     vendorID: "#C005",
 //     name: "Rohit Yadav",
 //     owner: "Sneha Joshi",
 //     rating: "⭐️⭐️⭐️⭐️⭐️",
@@ -77,19 +77,19 @@ const columns: string[] = [
 //   },
 // ];
 
-const CustomerDirectory = () => {
+const VendorDirectory = () => {
   const [isSideSheetOpen, setIsSideSheetOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("All");
   const [searchValue, setSearchValue] = useState("");
-  const [customers, setCustomers] = useState<CustomerRow[]>([]);
-  const tabOptions = ["All", "Customers", "Travellers", "Deleted"];
+  const [vendors, setVendors] = useState<VendorRow[]>([]);
+  const tabOptions = ["All", "Service", "Company", "Deleted"];
 
   useEffect(() => {
-    const fetchCustomers = async () => {
+    const fetchVendors = async () => {
       try {
-        const data = await getCustomers();
+        const data = await getVendors();
 
-        const mappedRows: CustomerRow[] = data.map((c: any, index: number) => ({
+        const mappedRows: VendorRow[] = data.map((c: any, index: number) => ({
           customerID: c._id || `#C00${index + 1}`,
           name: c.name,
           owner: c.ownerId || "—",
@@ -97,22 +97,22 @@ const CustomerDirectory = () => {
           dateCreated: new Date(c.createdAt).toLocaleDateString(),
           actions: "⋮",
         }));
-        setCustomers(mappedRows);
+        setVendors(mappedRows);
       } catch (err) {
-        console.error("Failed to fetch customers:", err);
+        console.error("Failed to fetch Vendors:", err);
       } finally {
         // Any cleanup or final steps
       }
     };
 
-    fetchCustomers();
+    fetchVendors();
   }, []);
 
   const tableData = useMemo<JSX.Element[][]>(
     () =>
-      customers.map((row, index) => [
+      vendors.map((row, index) => [
         <td key={`customerID-${index}`} className="px-4 py-3">
-          {row.customerID}
+          {row.vendorID}
         </td>,
         <td key={`name-${index}`} className="px-4 py-3">
           {row.name}
@@ -130,7 +130,7 @@ const CustomerDirectory = () => {
           <ActionMenu />
         </td>,
       ]),
-    [customers]
+    []
   );
 
   return (
@@ -166,7 +166,7 @@ const CustomerDirectory = () => {
             className="flex items-center gap-2 border border-green-900 text-green-900 px-6 py-2 rounded-lg font-semibold hover:bg-green-900 hover:text-white transition-all duration-200"
             type="button"
           >
-            + Add Customer
+            + Add Vendor
           </button>
         </div>
       </div>
@@ -201,7 +201,7 @@ const CustomerDirectory = () => {
         <Table data={tableData} columns={columns} />
       </div>
       {isSideSheetOpen && (
-        <AddCustomerSideSheet
+        <AddVendorSideSheet
           isOpen={isSideSheetOpen}
           onCancel={() => setIsSideSheetOpen(false)}
         />
@@ -210,4 +210,4 @@ const CustomerDirectory = () => {
   );
 };
 
-export default CustomerDirectory;
+export default VendorDirectory;

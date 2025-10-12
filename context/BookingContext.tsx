@@ -22,7 +22,7 @@ interface DraftBooking {
   draftName: string;
   createdAt: string;
   updatedAt: string;
-  status: 'draft' | 'completed';
+  status: "draft" | "completed";
   completedQuotationId?: string;
   service?: Service;
   generalInfo?: Partial<GeneralInfo>;
@@ -492,11 +492,13 @@ const bookingReducer = (
         selectedService: action.payload.service,
         generalInfo: action.payload.generalInfo || {},
         serviceInfo: action.payload.serviceInfo || {},
-        customerform: action.payload.customerform || state.customerForm,
-        vendorform: action.payload.vendorform || state.vendorForm,
+        customerForm: action.payload.customerform || state.customerForm,
+        vendorForm: action.payload.vendorform || state.vendorForm,
         flightinfoform: action.payload.flightinfoform || state.flightinfoform,
         currentDraftId: action.payload.id,
-        currentStep: action.payload.service ? "general-info" : "service-selection",
+        currentStep: action.payload.service
+          ? "general-info"
+          : "service-selection",
       };
 
     default:
@@ -657,7 +659,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
       };
 
       // Submit to API with draft ID if available
-      const response = await BookingApiService.createQuotation(bookingData, state.currentDraftId || undefined);
+      const response = await BookingApiService.createQuotation(
+        bookingData,
+        state.currentDraftId || undefined
+      );
 
       if (!response.success) {
         if (response.errors) {
@@ -693,48 +698,54 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
   ]);
 
   // Save draft function
-  const saveDraft = useCallback(async (draftName?: string) => {
-    dispatch({ type: "SET_DRAFT_LOADING", payload: true });
+  const saveDraft = useCallback(
+    async (draftName?: string) => {
+      dispatch({ type: "SET_DRAFT_LOADING", payload: true });
 
-    try {
-      const draftData = {
-        service: state.selectedService,
-        generalInfo: state.generalInfo,
-        serviceInfo: state.serviceInfo,
-        customerform: state.customerForm,
-        vendorform: state.vendorForm,
-        flightinfoform: state.flightinfoform,
-        timestamp: new Date().toISOString(),
-      };
+      try {
+        const draftData = {
+          service: state.selectedService,
+          generalInfo: state.generalInfo,
+          serviceInfo: state.serviceInfo,
+          customerform: state.customerForm,
+          vendorform: state.vendorForm,
+          flightinfoform: state.flightinfoform,
+          timestamp: new Date().toISOString(),
+        };
 
-      const response = await BookingApiService.saveDraft(draftData, draftName);
+        const response = await BookingApiService.saveDraft(
+          draftData,
+          draftName
+        );
 
-      if (!response.success) {
-        throw new Error(response.message || "Failed to save draft");
+        if (!response.success) {
+          throw new Error(response.message || "Failed to save draft");
+        }
+
+        // Update current draft ID
+        if (response.data) {
+          dispatch({ type: "SET_CURRENT_DRAFT_ID", payload: response.data.id });
+        }
+
+        console.log("Draft saved successfully to localStorage");
+      } catch (error) {
+        console.error("Error saving draft:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to save draft";
+        dispatch({ type: "SET_DRAFT_ERROR", payload: errorMessage });
+      } finally {
+        dispatch({ type: "SET_DRAFT_LOADING", payload: false });
       }
-
-      // Update current draft ID
-      if (response.data) {
-        dispatch({ type: "SET_CURRENT_DRAFT_ID", payload: response.data.id });
-      }
-
-      console.log("Draft saved successfully to localStorage");
-    } catch (error) {
-      console.error("Error saving draft:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to save draft";
-      dispatch({ type: "SET_DRAFT_ERROR", payload: errorMessage });
-    } finally {
-      dispatch({ type: "SET_DRAFT_LOADING", payload: false });
-    }
-  }, [
-    state.selectedService,
-    state.generalInfo,
-    state.serviceInfo,
-    state.customerForm,
-    state.vendorForm,
-    state.flightinfoform,
-  ]);
+    },
+    [
+      state.selectedService,
+      state.generalInfo,
+      state.serviceInfo,
+      state.customerForm,
+      state.vendorForm,
+      state.flightinfoform,
+    ]
+  );
 
   // Validate customer function
   const validateCustomer = useCallback(
@@ -805,41 +816,47 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   // Delete draft function
-  const deleteDraft = useCallback(async (draftId: string) => {
-    try {
-      const response = await BookingApiService.deleteDraft(draftId);
-      if (response.success) {
-        // Reload drafts to update the list
-        await loadDrafts();
-        // Clear current draft ID if it was the deleted draft
-        if (state.currentDraftId === draftId) {
-          dispatch({ type: "SET_CURRENT_DRAFT_ID", payload: null });
+  const deleteDraft = useCallback(
+    async (draftId: string) => {
+      try {
+        const response = await BookingApiService.deleteDraft(draftId);
+        if (response.success) {
+          // Reload drafts to update the list
+          await loadDrafts();
+          // Clear current draft ID if it was the deleted draft
+          if (state.currentDraftId === draftId) {
+            dispatch({ type: "SET_CURRENT_DRAFT_ID", payload: null });
+          }
+        } else {
+          throw new Error(response.message || "Failed to delete draft");
         }
-      } else {
-        throw new Error(response.message || "Failed to delete draft");
+      } catch (error) {
+        console.error("Error deleting draft:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to delete draft";
+        dispatch({ type: "SET_DRAFT_ERROR", payload: errorMessage });
       }
-    } catch (error) {
-      console.error("Error deleting draft:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to delete draft";
-      dispatch({ type: "SET_DRAFT_ERROR", payload: errorMessage });
-    }
-  }, [loadDrafts, state.currentDraftId]);
+    },
+    [loadDrafts, state.currentDraftId]
+  );
 
   // Search drafts function
-  const searchDrafts = useCallback(async (query: string): Promise<DraftBooking[]> => {
-    try {
-      const response = await BookingApiService.searchDrafts(query);
-      if (response.success && response.data) {
-        return response.data;
-      } else {
-        throw new Error(response.message || "Failed to search drafts");
+  const searchDrafts = useCallback(
+    async (query: string): Promise<DraftBooking[]> => {
+      try {
+        const response = await BookingApiService.searchDrafts(query);
+        if (response.success && response.data) {
+          return response.data;
+        } else {
+          throw new Error(response.message || "Failed to search drafts");
+        }
+      } catch (error) {
+        console.error("Error searching drafts:", error);
+        return [];
       }
-    } catch (error) {
-      console.error("Error searching drafts:", error);
-      return [];
-    }
-  }, []);
+    },
+    []
+  );
 
   // Computed properties
   const steps = ["service-selection", "general-info", "service-info", "review"];

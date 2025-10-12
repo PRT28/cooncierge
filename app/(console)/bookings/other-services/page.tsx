@@ -43,7 +43,13 @@ const BookingFormSidesheet = dynamic(
   }
 );
 
-type BookingStatus = "Successful" | "Pending" | "Failed" | "confirmed" | "draft" | "cancelled";
+type BookingStatus =
+  | "Successful"
+  | "Pending"
+  | "Failed"
+  | "confirmed"
+  | "draft"
+  | "cancelled";
 
 type BookingRow = {
   id: string;
@@ -96,8 +102,6 @@ interface QuotationData {
   createdAt: string;
   updatedAt: string;
 }
-
-
 
 interface SummaryData {
   total: {
@@ -197,7 +201,9 @@ const OSBookingsPage = () => {
   // UI State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSideSheetOpen, setIsSideSheetOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<BookingService | null>(null);
+  const [selectedService, setSelectedService] = useState<BookingService | null>(
+    null
+  );
 
   // Data State
   const [quotations, setQuotations] = useState<QuotationData[]>([]);
@@ -214,7 +220,10 @@ const OSBookingsPage = () => {
 
       // Get user info for party-specific quotations
       const user = getAuthUser<Record<string, unknown>>() || {};
-      const partyId = (user && typeof user === 'object' && '_id' in user ? (user as { _id?: string })._id : '') || '';
+      const partyId =
+        (user && typeof user === "object" && "_id" in user
+          ? (user as { _id?: string })._id
+          : "") || "";
 
       let response;
       if (partyId) {
@@ -229,11 +238,11 @@ const OSBookingsPage = () => {
         setQuotations(response.data?.quotations || response.data);
         calculateSummaryData(response.data?.quotations);
       } else {
-        throw new Error(response.message || 'Failed to load quotations');
+        throw new Error(response.message || "Failed to load quotations");
       }
     } catch (err) {
-      console.error('Error loading quotations:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load bookings');
+      console.error("Error loading quotations:", err);
+      setError(err instanceof Error ? err.message : "Failed to load bookings");
     } finally {
       setIsLoading(false);
     }
@@ -247,32 +256,43 @@ const OSBookingsPage = () => {
         setDrafts(response.data);
       }
     } catch (err) {
-      console.error('Error loading drafts:', err);
+      console.error("Error loading drafts:", err);
     }
   }, []);
 
   // Calculate summary data from quotations
   const calculateSummaryData = useCallback((quotationData: QuotationData[]) => {
-    const total = quotationData.reduce((sum, q) => sum + (q.totalAmount || 0), 0);
-    const confirmed = quotationData.filter(q => q.status === 'confirmed');
-    const pending = quotationData.filter(q => q.status === 'draft' || q.status === 'pending');
+    const total = quotationData.reduce(
+      (sum, q) => sum + (q.totalAmount || 0),
+      0
+    );
+    const confirmed = quotationData.filter((q) => q.status === "confirmed");
+    const pending = quotationData.filter(
+      (q) => q.status === "draft" || q.status === "pending"
+    );
 
-    const confirmedAmount = confirmed.reduce((sum, q) => sum + (q.totalAmount || 0), 0);
-    const pendingAmount = pending.reduce((sum, q) => sum + (q.totalAmount || 0), 0);
+    const confirmedAmount = confirmed.reduce(
+      (sum, q) => sum + (q.totalAmount || 0),
+      0
+    );
+    const pendingAmount = pending.reduce(
+      (sum, q) => sum + (q.totalAmount || 0),
+      0
+    );
 
     setSummaryData({
       total: {
-        amount: `₹ ${total.toLocaleString('en-IN')}`,
+        amount: `₹ ${total.toLocaleString("en-IN")}`,
         change: `${quotationData.length} total bookings`,
         isPositive: true,
       },
       youGive: {
-        amount: `₹ ${pendingAmount.toLocaleString('en-IN')}`,
+        amount: `₹ ${pendingAmount.toLocaleString("en-IN")}`,
         change: `${pending.length} pending bookings`,
         isPositive: false,
       },
       youGet: {
-        amount: `₹ ${confirmedAmount.toLocaleString('en-IN')}`,
+        amount: `₹ ${confirmedAmount.toLocaleString("en-IN")}`,
         change: `${confirmed.length} confirmed bookings`,
         isPositive: true,
       },
@@ -285,7 +305,7 @@ const OSBookingsPage = () => {
       await BookingApiService.syncDraftsWithBackend();
       await loadDrafts(); // Reload drafts after sync
     } catch (err) {
-      console.error('Error syncing drafts:', err);
+      console.error("Error syncing drafts:", err);
     }
   }, [loadDrafts]);
 
@@ -310,33 +330,33 @@ const OSBookingsPage = () => {
 
   const getServiceIcon = (quotationType: string): string => {
     const iconMap: Record<string, string> = {
-      'flight': '✈️',
-      'flights': '✈️',
-      'hotel': '🏨',
-      'accommodation': '🏨',
-      'car': '🚗',
-      'transportation': '🚗',
-      'package': '🎫',
-      'activity': '🎯',
-      'insurance': '🛡️',
-      'visa': '📋',
+      flight: "✈️",
+      flights: "✈️",
+      hotel: "🏨",
+      accommodation: "🏨",
+      car: "🚗",
+      transportation: "🚗",
+      package: "🎫",
+      activity: "🎯",
+      insurance: "🛡️",
+      visa: "📋",
     };
-    return iconMap[quotationType?.toLowerCase()] || '📋';
+    return iconMap[quotationType?.toLowerCase()] || "📋";
   };
 
   const mapStatus = (status: string): BookingStatus => {
     const statusMap: Record<string, BookingStatus> = {
-      'confirmed': 'Successful',
-      'draft': 'Pending',
-      'pending': 'Pending',
-      'cancelled': 'Failed',
+      confirmed: "Successful",
+      draft: "Pending",
+      pending: "Pending",
+      cancelled: "Failed",
     };
-    return statusMap[status?.toLowerCase()] || 'Pending';
+    return statusMap[status?.toLowerCase()] || "Pending";
   };
 
   // Handle viewing quotation details
   const handleViewQuotation = useCallback(async (quotation: QuotationData) => {
-    console.log('Viewing quotation:', quotation);
+    console.log("Viewing quotation:", quotation);
     // You can implement a modal or navigation to view quotation details
   }, []);
 
@@ -348,12 +368,20 @@ const OSBookingsPage = () => {
       // Real quotations from API
       ...quotations.map((quotation, index) => ({
         id: `#${quotation._id}`,
-        leadPax: quotation.formFields?.customer || quotation.formFields?.traveller1 || 'Unknown',
-        travelDate: quotation.formFields?.departureDate || new Date(quotation.createdAt).toLocaleDateString('en-GB'),
-        service: getServiceIcon(quotation.quotationType) + ' ' + quotation.quotationType,
+        leadPax:
+          quotation.formFields?.customer ||
+          quotation.formFields?.traveller1 ||
+          "Unknown",
+        travelDate:
+          quotation.formFields?.departureDate ||
+          new Date(quotation.createdAt).toLocaleDateString("en-GB"),
+        service:
+          getServiceIcon(quotation.quotationType) +
+          " " +
+          quotation.quotationType,
         bookingStatus: mapStatus(quotation.status),
-        amount: `₹ ${quotation.totalAmount?.toLocaleString('en-IN') || '0'}`,
-        voucher: '📄',
+        amount: `₹ ${quotation.totalAmount?.toLocaleString("en-IN") || "0"}`,
+        voucher: "📄",
         tasks: Math.floor(Math.random() * 5) + 1, // Random tasks for demo
         isReal: true,
         originalIndex: index,
@@ -387,7 +415,11 @@ const OSBookingsPage = () => {
           aria-label="View voucher"
           type="button"
           onClick={() => {
-            if (row.isReal && row.originalIndex !== undefined && quotations[row.originalIndex]) {
+            if (
+              row.isReal &&
+              row.originalIndex !== undefined &&
+              quotations[row.originalIndex]
+            ) {
               handleViewQuotation(quotations[row.originalIndex]!);
             }
           }}
@@ -404,8 +436,6 @@ const OSBookingsPage = () => {
   }, [quotations, handleViewQuotation]);
 
   // Helper functions
-
-
 
   const filterOptions = useMemo(
     () => ({
@@ -441,7 +471,7 @@ const OSBookingsPage = () => {
           {drafts.length > 0 && (
             <div className="text-sm text-gray-600">
               <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
-                {drafts.length} Draft{drafts.length !== 1 ? 's' : ''}
+                {drafts.length} Draft{drafts.length !== 1 ? "s" : ""}
               </span>
             </div>
           )}

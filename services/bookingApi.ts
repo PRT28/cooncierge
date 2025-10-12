@@ -151,10 +151,10 @@ interface ServiceInfo {
 interface BookingData {
   service: Service;
   generalInfo: GeneralInfo;
-  serviceInfo: ServiceInfo;
   customerform: CustomerFrom;
   vendorform: VendorForm;
   flightinfoform: FlightInfoForm;
+  accommodationform: AccommodationInfoForm;
   timestamp: string;
 }
 
@@ -179,7 +179,7 @@ interface QuotationPayload {
   channel: 'B2C' | 'B2B';
   partyId: string;
   formFields: Record<string, unknown>;
-  totalAmount: number;
+  totalAmount: number | string;
   status: 'draft' | 'pending' | 'confirmed' | 'cancelled';
 }
 
@@ -344,8 +344,7 @@ export class DraftManager {
     return drafts.filter(draft =>
       draft.draftName?.toLowerCase().includes(lowercaseQuery) ||
       draft.service?.title?.toLowerCase().includes(lowercaseQuery) ||
-      draft.generalInfo?.customer?.toLowerCase().includes(lowercaseQuery) ||
-      draft.serviceInfo?.destination?.toLowerCase().includes(lowercaseQuery)
+      draft.generalInfo?.customer?.toLowerCase().includes(lowercaseQuery)
     );
   }
 }
@@ -599,7 +598,7 @@ export const validateFlightInfoForm = (data: FlightInfoForm): Record<string, str
     });
   }
 
-  // Flight type validation (optional, but good to have)
+  // Flight type validation (optional)
   if (!data.flightType) {
     errors.flightType = "Flight type is required";
   }
@@ -785,13 +784,13 @@ export class BookingApiService {
         partyId,
         formFields: {
           ...bookingData.generalInfo,
-          ...bookingData.serviceInfo,
           ...bookingData.customerform,
            ...bookingData.vendorform,
             ...bookingData.flightinfoform,
+            ...bookingData.accommodationform,
           service: bookingData.service,
         },
-        totalAmount: bookingData.serviceInfo.budget,
+        totalAmount: bookingData.flightinfoform.sellingprice || bookingData.accommodationform.sellingprice || 0,
         status: 'confirmed',
       };
 
@@ -931,9 +930,9 @@ export class BookingApiService {
       const bookingData: BookingData = {
         service: draft.service!,
         generalInfo: draft.generalInfo as GeneralInfo,
-        serviceInfo: draft.serviceInfo as ServiceInfo,
         customerform: draft.customerform!,
         vendorform: draft.vendorform!,
+        accommodationform: draft.accommodationform!,
         flightinfoform: draft.flightinfoform!,
         timestamp: new Date().toISOString(),
       };
@@ -969,7 +968,8 @@ export class BookingApiService {
           drafts.forEach(draft => {
             const matchingQuotation = quotations.find((q: BackendQuotation) =>
               q.formFields?.customer === draft.generalInfo?.customer &&
-              q.formFields?.destination === draft.serviceInfo?.destination &&
+              q.formFields?.costprice === draft.flightinfoform?.costprice && q.formFields?.sellingprice === draft.flightinfoform?.sellingprice &&
+              q.formFields?.propertyName === draft.accommodationform?.propertyName &&
               q.quotationType === draft.service?.category
             );
 

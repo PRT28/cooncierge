@@ -4,6 +4,7 @@ import React, { useState, useCallback, useMemo } from "react";
 import ConfirmPopupModal from "./popups/ConfirmPopupModal";
 import SuccessPopupModal from "./popups/SuccessPopupModal";
 import { BookingProvider, useBooking } from "@/context/BookingContext";
+import { BookingApiService } from "@/services/bookingApi";
 import SideSheet from "@/components/SideSheet";
 import GeneralInfoForm from "./forms/GeneralInfoForm";
 import AddNewCustomerForm from "./forms/AddNewFroms/AddNewCustomerForm";
@@ -72,6 +73,7 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const { isAddCustomerOpen, isAddVendorOpen } = useBooking();
+  const { submitBooking, saveDraft } = useBooking();
 
   // Memoized tab configuration
   const tabs: TabConfig[] = useMemo(
@@ -89,6 +91,139 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
         isEnabled: !!selectedService,
       },
     ],
+    [selectedService]
+  );
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.currentTarget);
+      const formValues = Object.fromEntries(formData.entries()) as Record<
+        string,
+        any
+      >;
+
+      if (!selectedService) {
+        console.error("No service selected");
+        return;
+      }
+
+      const { totalAmount, ...restFields } = formValues;
+
+      const selectedServiceObj: Service = {
+        id: "",
+        title: "",
+        image: "",
+        category: selectedService.category,
+        description: "",
+      };
+
+      const bookingData = {
+        service: selectedServiceObj,
+        generalInfo: {
+          customer: formValues.customer || "",
+          vendor: formValues.vendor || "",
+          adults: Number(formValues.adults || 0),
+          children: Number(formValues.children || 0),
+          infants: Number(formValues.infants || 0),
+          traveller1: formValues.traveller1 || "",
+          traveller2: formValues.traveller2 || "",
+          traveller3: formValues.traveller3 || "",
+          bookingOwner: formValues.bookingOwner || "",
+          remarks: formValues.remarks || "",
+        },
+        customerform: {
+          firstname: formValues.firstname || "",
+          lastname: formValues.lastname || "",
+          nickname: formValues.nickname || "",
+          contactnumber: Number(formValues.contactnumber || 0),
+          emailId: formValues.emailId || "",
+          dateofbirth: Number(formValues.dateofbirth || 0),
+          gstin: Number(formValues.gstin || 0),
+          companyname: formValues.companyname || "",
+          adhaarnumber: Number(formValues.adhaarnumber || 0),
+          pan: formValues.pan || "",
+          passport: formValues.passport || "",
+          billingaddress: formValues.billingaddress || "",
+          remarks: formValues.customerRemarks || "",
+        },
+        vendorform: {
+          companyname: formValues.vendorCompanyName || "",
+          companyemail: formValues.vendorCompanyEmail || "",
+          contactnumber: Number(formValues.vendorContact || 0),
+          gstin: Number(formValues.vendorGstin || 0),
+          firstname: formValues.vendorFirstname || "",
+          lastname: formValues.vendorLastname || "",
+          nickname: formValues.vendorNickname || "",
+          emailId: formValues.vendorEmailId || "",
+          dateofbirth: Number(formValues.vendorDob || 0),
+          document: formValues.vendorDocument || "",
+          billingaddress: formValues.vendorBillingAddress || "",
+          remarks: formValues.vendorRemarks || "",
+        },
+        flightinfoform: {
+          bookingdate: formValues.bookingdate || "",
+          traveldate: formValues.traveldate || "",
+          bookingstatus: formValues.bookingstatus || "Confirmed",
+          costprice: Number(formValues.costprice || 0),
+          sellingprice: Number(formValues.sellingprice || 0),
+          PNR: formValues.PNR || "",
+          pnrEnabled: formValues.pnrEnabled || false,
+          segments: formValues.segments || [],
+          returnSegments: formValues.returnSegments || [],
+          samePNRForAllSegments: formValues.samePNRForAllSegments || false,
+          flightType: formValues.flightType || "One Way",
+          voucher: formValues.voucher || null,
+          taxinvoice: formValues.taxinvoice || null,
+          remarks: formValues.flightRemarks || "",
+        },
+        accommodationform: {
+          bookingdate: formValues.bookingdate || "",
+          traveldate: formValues.traveldate || "",
+          bookingstatus: formValues.bookingstatus || "Confirmed",
+          checkindate: formValues.checkindate || "",
+          checkintime: formValues.checkintime || "",
+          checkoutdate: formValues.checkoutdate || "",
+          checkouttime: formValues.checkouttime || "",
+          checkOutPeriod: formValues.checkOutPeriod || "AM",
+          pax: Number(formValues.pax || 0),
+          mealPlan: formValues.mealPlan || "EPAI",
+          confirmationNumber: formValues.confirmationNumber || "",
+          accommodationType: formValues.accommodationType || "",
+          propertyName: formValues.propertyName || "",
+          propertyAddress: formValues.propertyAddress || "",
+          googleMapsLink: formValues.googleMapsLink || "",
+          segments: formValues.accommodationSegments || [],
+          costprice: Number(formValues.accomCost || 0),
+          sellingprice: Number(formValues.accomSell || 0),
+          voucher: formValues.accomVoucher || null,
+          taxinvoice: formValues.accomTaxInvoice || null,
+          remarks: formValues.accomRemarks || "",
+        },
+        timestamp: new Date().toISOString(),
+      };
+
+      try {
+        const response = await BookingApiService.createQuotation(bookingData);
+
+        if (response.success) {
+          console.log("Quotation created successfully!", response.data);
+          e.currentTarget.reset();
+        } else {
+          console.error(
+            "Failed to create quotation:",
+            response.message,
+            response.errors
+          );
+        }
+      } catch (err: any) {
+        console.error(
+          "Unexpected error creating quotation:",
+          err.message || err
+        );
+      }
+    },
     [selectedService]
   );
 
@@ -271,12 +406,14 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
                     <button
                       onClick={async () => {
                         try {
-                          const draftName = `${selectedService?.title || 'Booking'} - ${formData?.generalInfo?.customer || 'Draft'}`;
+                          const draftName = `${
+                            selectedService?.title || "Booking"
+                          } - ${formData?.generalInfo?.customer || "Draft"}`;
                           await saveDraft(draftName);
                           // Show success message or close
                           onClose();
                         } catch (error) {
-                          console.error('Error saving draft:', error);
+                          console.error("Error saving draft:", error);
                         }
                       }}
                       className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
@@ -310,11 +447,13 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
         }}
         onSaveAsDrafts={async () => {
           try {
-            const draftName = `${selectedService?.title || 'Booking'} - ${formData?.generalInfo?.customer || 'Draft'}`;
+            const draftName = `${selectedService?.title || "Booking"} - ${
+              formData?.generalInfo?.customer || "Draft"
+            }`;
             await saveDraft(draftName);
             setIsSuccessModalOpen(true);
           } catch (error) {
-            console.error('Error saving draft:', error);
+            console.error("Error saving draft:", error);
           }
         }}
       />
