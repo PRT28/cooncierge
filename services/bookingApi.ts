@@ -1,6 +1,8 @@
 "use client";
 
-import axios, { AxiosResponse, AxiosError } from 'axios';
+import type { AxiosError } from 'axios';
+import apiClient from '@/services/apiClient';
+import { getAuthUser } from '@/services/storage/authStorage';
 
 // Type definitions
 interface Service {
@@ -156,65 +158,197 @@ interface BookingData {
   timestamp: string;
 }
 
-interface ApiResponse<T = any> {
+export interface DraftBooking extends Partial<BookingData> {
+  id: string;
+  draftName: string;
+  createdAt: string;
+  updatedAt: string;
+  status: 'draft' | 'completed';
+  completedQuotationId?: string;
+}
+
+interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
-  errors?: Record<string, string>;
+  errors?: Record<string, string> | undefined;
 }
 
 interface QuotationPayload {
   quotationType: string;
   channel: 'B2C' | 'B2B';
   partyId: string;
-  formFields: Record<string, any>;
+  formFields: Record<string, unknown>;
   totalAmount: number;
   status: 'draft' | 'pending' | 'confirmed' | 'cancelled';
 }
 
-// API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+interface BackendQuotation {
+  id?: string;
+  _id?: string;
+  quotationType: string;
+  channel: string;
+  partyId: string;
+  formFields: Record<string, unknown>;
+  totalAmount: number;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
-// Create axios instance with default config
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// API Configuration moved to services/apiClient.ts
 
-// Request interceptor to add auth token
-apiClient.interceptors.request.use(
-  (config) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.authorization = token;
-      }
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+// LocalStorage Draft Management
+const DRAFT_STORAGE_KEY = 'booking_drafts';
+
+export class DraftManager {
+  // Generate unique ID for drafts
+  private static generateId(): string {
+    return `draft_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
-);
 
-// Response interceptor for error handling
-apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
+  // Get all drafts from localStorage
+  static getAllDrafts(): DraftBooking[] {
+    try {
+      if (typeof window === 'undefined') return [];
+      const drafts = localStorage.getItem(DRAFT_STORAGE_KEY);
+      return drafts ? JSON.parse(drafts) : [];
+    } catch (error) {
+      console.error('Error reading drafts from localStorage:', error);
+      return [];
+    }
+  }
+
+  // Save draft to localStorage
+  static saveDraft(bookingData: Partial<BookingData>, draftName?: string): DraftBooking {
+    try {
+      const drafts = this.getAllDrafts();
+      const now = new Date().toISOString();
+
+      // Check if this is an update to existing draft
+      const existingDraftIndex = drafts.findIndex(draft =>
+        draft.service?.id === bookingData.service?.id &&
+        draft.generalInfo?.customer === bookingData.generalInfo?.customer
+      );
+
+      const existingDraft = existingDraftIndex >= 0 ? drafts[existingDraftIndex] : null;
+      const draftId = existingDraft?.id || this.generateId();
+
+      const draft: DraftBooking = {
+        id: draftId,
+        draftName: draftName || `Draft - ${bookingData.service?.title || 'Unknown Service'}`,
+        createdAt: existingDraft?.createdAt || now,
+        updatedAt: now,
+        status: 'draft',
+        ...bookingData,
+        timestamp: now,
+      };
+
+      if (existingDraftIndex >= 0) {
+        drafts[existingDraftIndex] = draft;
+      } else {
+        drafts.push(draft);
+      }
+
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(drafts));
       }
+
+      return draft;
+    } catch (error) {
+      console.error('Error saving draft to localStorage:', error);
+      throw new Error('Failed to save draft');
     }
-    return Promise.reject(error);
   }
-);
+
+  // Get draft by ID
+  static getDraftById(id: string): DraftBooking | null {
+    const drafts = this.getAllDrafts();
+    return drafts.find(draft => draft.id === id) || null;
+  }
+
+  // Delete draft from localStorage
+  static deleteDraft(id: string): boolean {
+    try {
+      const drafts = this.getAllDrafts();
+      const filteredDrafts = drafts.filter(draft => draft.id !== id);
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(filteredDrafts));
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting draft from localStorage:', error);
+      return false;
+    }
+  }
+
+  // Mark draft as completed and optionally delete it
+  static completeDraft(draftId: string, quotationId: string, deleteAfterCompletion = true): boolean {
+    try {
+      const drafts = this.getAllDrafts();
+      const draftIndex = drafts.findIndex(draft => draft.id === draftId);
+
+      if (draftIndex >= 0) {
+        if (deleteAfterCompletion) {
+          // Delete the draft since it's completed
+          drafts.splice(draftIndex, 1);
+        } else {
+          // Mark as completed but keep for reference
+          const draft = drafts[draftIndex];
+          if (draft) {
+            draft.status = 'completed';
+            draft.completedQuotationId = quotationId;
+            draft.updatedAt = new Date().toISOString();
+          }
+        }
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(drafts));
+        }
+
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error completing draft:', error);
+      return false;
+    }
+  }
+
+  // Clear all drafts
+  static clearAllDrafts(): boolean {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+      }
+      return true;
+    } catch (error) {
+      console.error('Error clearing all drafts:', error);
+      return false;
+    }
+  }
+
+  // Get drafts count
+  static getDraftsCount(): number {
+    return this.getAllDrafts().length;
+  }
+
+  // Search drafts by service type or customer name
+  static searchDrafts(query: string): DraftBooking[] {
+    const drafts = this.getAllDrafts();
+    const lowercaseQuery = query.toLowerCase();
+
+    return drafts.filter(draft =>
+      draft.draftName?.toLowerCase().includes(lowercaseQuery) ||
+      draft.service?.title?.toLowerCase().includes(lowercaseQuery) ||
+      draft.generalInfo?.customer?.toLowerCase().includes(lowercaseQuery) ||
+      draft.serviceInfo?.destination?.toLowerCase().includes(lowercaseQuery)
+    );
+  }
+}
 
 // Validation utilities
 export const validateGeneralInfo = (data: Partial<GeneralInfo>): Record<string, string> => {
@@ -604,7 +738,7 @@ export class BookingApiService {
   }
 
   // Validate customer
-  static async validateCustomer(customerId: string): Promise<ApiResponse<any>> {
+  static async validateCustomer(customerId: string): Promise<ApiResponse<unknown>> {
     try {
       const response = await apiClient.get(`/customers/validate/${customerId}`);
       return {
@@ -621,7 +755,7 @@ export class BookingApiService {
   }
 
   // Validate vendor
-  static async validateVendor(vendorId: string): Promise<ApiResponse<any>> {
+  static async validateVendor(vendorId: string): Promise<ApiResponse<unknown>> {
     try {
       const response = await apiClient.get(`/vendors/validate/${vendorId}`);
       return {
@@ -638,12 +772,11 @@ export class BookingApiService {
   }
 
   // Create quotation
-  static async createQuotation(bookingData: BookingData): Promise<ApiResponse<any>> {
+  static async createQuotation(bookingData: BookingData, draftId?: string): Promise<ApiResponse<unknown>> {
     try {
       // Get user info
-      const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-      const user = userStr ? JSON.parse(userStr) : {};
-      const partyId = user._id || '';
+      const user = getAuthUser<Record<string, unknown>>() || {};
+      const partyId = (user && typeof user === 'object' && '_id' in user ? (user as { _id?: string })._id : '') || '';
 
       // Prepare payload
       const payload: QuotationPayload = {
@@ -659,10 +792,15 @@ export class BookingApiService {
           service: bookingData.service,
         },
         totalAmount: bookingData.serviceInfo.budget,
-        status: 'draft',
+        status: 'confirmed',
       };
 
       const response = await apiClient.post('/quotation/create-quotation', payload);
+
+      // If quotation is created successfully and we have a draftId, delete the draft
+      if (response.data && draftId) {
+        DraftManager.completeDraft(draftId, response.data.id || response.data._id, true);
+      }
 
       return {
         success: true,
@@ -670,31 +808,32 @@ export class BookingApiService {
         message: 'Quotation created successfully',
       };
     } catch (error) {
-      console.error('Error creating quotation:', error);
+      const err = error as AxiosError<{ message?: string; errors?: Record<string, string> }>;
+      console.error('Error creating quotation:', err);
 
-      if (axios.isAxiosError(error)) {
+      if (err?.response) {
         return {
           success: false,
-          message: error.response?.data?.message || 'Failed to create quotation',
-          errors: error.response?.data?.errors,
+          message: err.response.data?.message || 'Failed to create quotation',
+          errors: err.response.data?.errors,
         };
       }
 
       return {
         success: false,
-        message: 'An unexpected error occurred',
+        message: err.message || 'An unexpected error occurred',
       };
     }
   }
 
-  // Save draft booking
-  static async saveDraft(bookingData: Partial<BookingData>): Promise<ApiResponse<any>> {
+  // Save draft booking to localStorage
+  static async saveDraft(bookingData: Partial<BookingData>, draftName?: string): Promise<ApiResponse<DraftBooking>> {
     try {
-      const response = await apiClient.post('/bookings/draft', bookingData);
+      const draft = DraftManager.saveDraft(bookingData, draftName);
       return {
         success: true,
-        data: response.data,
-        message: 'Draft saved successfully',
+        data: draft,
+        message: 'Draft saved successfully to local storage',
       };
     } catch (error) {
       console.error('Error saving draft:', error);
@@ -705,19 +844,153 @@ export class BookingApiService {
     }
   }
 
-  // Get booking drafts
-  static async getDrafts(): Promise<ApiResponse<any[]>> {
+  // Get booking drafts from localStorage
+  static async getDrafts(): Promise<ApiResponse<DraftBooking[]>> {
     try {
-      const response = await apiClient.get('/bookings/drafts');
+      const drafts = DraftManager.getAllDrafts();
       return {
         success: true,
-        data: response.data,
+        data: drafts,
+        message: `Found ${drafts.length} drafts`,
       };
     } catch (error) {
       console.error('Error fetching drafts:', error);
       return {
         success: false,
         message: 'Failed to fetch drafts',
+      };
+    }
+  }
+
+  // Get draft by ID from localStorage
+  static async getDraftById(id: string): Promise<ApiResponse<DraftBooking | null>> {
+    try {
+      const draft = DraftManager.getDraftById(id);
+      return {
+        success: true,
+        data: draft,
+        message: draft ? 'Draft found' : 'Draft not found',
+      };
+    } catch (error) {
+      console.error('Error fetching draft:', error);
+      return {
+        success: false,
+        message: 'Failed to fetch draft',
+      };
+    }
+  }
+
+  // Delete draft from localStorage
+  static async deleteDraft(id: string): Promise<ApiResponse<boolean>> {
+    try {
+      const success = DraftManager.deleteDraft(id);
+      return {
+        success,
+        data: success,
+        message: success ? 'Draft deleted successfully' : 'Failed to delete draft',
+      };
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+      return {
+        success: false,
+        message: 'Failed to delete draft',
+      };
+    }
+  }
+
+  // Search drafts in localStorage
+  static async searchDrafts(query: string): Promise<ApiResponse<DraftBooking[]>> {
+    try {
+      const drafts = DraftManager.searchDrafts(query);
+      return {
+        success: true,
+        data: drafts,
+        message: `Found ${drafts.length} matching drafts`,
+      };
+    } catch (error) {
+      console.error('Error searching drafts:', error);
+      return {
+        success: false,
+        message: 'Failed to search drafts',
+      };
+    }
+  }
+
+  // Convert draft to quotation (create quotation from draft)
+  static async convertDraftToQuotation(draftId: string): Promise<ApiResponse<unknown>> {
+    try {
+      const draft = DraftManager.getDraftById(draftId);
+      if (!draft) {
+        return {
+          success: false,
+          message: 'Draft not found',
+        };
+      }
+
+      // Convert draft to booking data format
+      const bookingData: BookingData = {
+        service: draft.service!,
+        generalInfo: draft.generalInfo as GeneralInfo,
+        serviceInfo: draft.serviceInfo as ServiceInfo,
+        customerform: draft.customerform!,
+        vendorform: draft.vendorform!,
+        flightinfoform: draft.flightinfoform!,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Create quotation and auto-delete draft
+      return await this.createQuotation(bookingData, draftId);
+    } catch (error) {
+      console.error('Error converting draft to quotation:', error);
+      return {
+        success: false,
+        message: 'Failed to convert draft to quotation',
+      };
+    }
+  }
+
+  // Sync drafts with backend quotations (check if any drafts have been completed)
+  static async syncDraftsWithBackend(): Promise<ApiResponse<{ syncedCount: number }>> {
+    try {
+      const drafts = DraftManager.getAllDrafts();
+      let syncedCount = 0;
+
+      // Get user's quotations from backend
+      const user = getAuthUser<Record<string, unknown>>() || {};
+      const partyId = (user && typeof user === 'object' && '_id' in user ? (user as { _id?: string })._id : '') || '';
+
+      if (partyId) {
+        const quotationsResponse = await this.getQuotationsByParty(partyId);
+
+        if (quotationsResponse.success && quotationsResponse.data) {
+          const quotations = Array.isArray(quotationsResponse.data) ? quotationsResponse.data as BackendQuotation[] : [];
+
+          // Check each draft against backend quotations
+          drafts.forEach(draft => {
+            const matchingQuotation = quotations.find((q: BackendQuotation) =>
+              q.formFields?.customer === draft.generalInfo?.customer &&
+              q.formFields?.destination === draft.serviceInfo?.destination &&
+              q.quotationType === draft.service?.category
+            );
+
+            if (matchingQuotation) {
+              DraftManager.completeDraft(draft.id, matchingQuotation.id || matchingQuotation._id || '', true);
+              syncedCount++;
+            }
+          });
+        }
+      }
+
+      return {
+        success: true,
+        data: { syncedCount },
+        message: `Synced ${syncedCount} drafts with backend quotations`,
+      };
+    } catch (error) {
+      console.error('Error syncing drafts with backend:', error);
+      return {
+        success: false,
+        message: 'Failed to sync drafts with backend',
       };
     }
   }
@@ -749,13 +1022,104 @@ export class BookingApiService {
     }
   }
 
-  // Get booking history
-  static async getBookingHistory(page = 1, limit = 10): Promise<ApiResponse<any>> {
+  // Get all quotations (bookings)
+  static async getAllQuotations(): Promise<ApiResponse<unknown>> {
     try {
-      const response = await apiClient.get(`/bookings/history?page=${page}&limit=${limit}`);
+      const response = await apiClient.get('/quotation/get-all-quotations');
       return {
         success: true,
         data: response.data,
+        message: 'Quotations retrieved successfully',
+      };
+    } catch (error) {
+      console.error('Error fetching quotations:', error);
+      return {
+        success: false,
+        message: 'Failed to fetch quotations',
+      };
+    }
+  }
+
+  // Get quotation by ID
+  static async getQuotationById(id: string): Promise<ApiResponse<unknown>> {
+    try {
+      const response = await apiClient.get(`/quotation/get-quotation/${id}`);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Quotation retrieved successfully',
+      };
+    } catch (error) {
+      console.error('Error fetching quotation:', error);
+      return {
+        success: false,
+        message: 'Failed to fetch quotation',
+      };
+    }
+  }
+
+  // Get quotations by party ID
+  static async getQuotationsByParty(partyId: string): Promise<ApiResponse<unknown>> {
+    try {
+      const response = await apiClient.get(`/quotation/get-quotations-by-party/${partyId}`);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Party quotations retrieved successfully',
+      };
+    } catch (error) {
+      console.error('Error fetching party quotations:', error);
+      return {
+        success: false,
+        message: 'Failed to fetch party quotations',
+      };
+    }
+  }
+
+  // Update quotation
+  static async updateQuotation(id: string, updateData: Partial<QuotationPayload>): Promise<ApiResponse<unknown>> {
+    try {
+      const response = await apiClient.put(`/quotation/update-quotation/${id}`, updateData);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Quotation updated successfully',
+      };
+    } catch (error) {
+      console.error('Error updating quotation:', error);
+      return {
+        success: false,
+        message: 'Failed to update quotation',
+      };
+    }
+  }
+
+  // Delete quotation
+  static async deleteQuotation(id: string): Promise<ApiResponse<unknown>> {
+    try {
+      const response = await apiClient.delete(`/quotation/delete-quotation/${id}`);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Quotation deleted successfully',
+      };
+    } catch (error) {
+      console.error('Error deleting quotation:', error);
+      return {
+        success: false,
+        message: 'Failed to delete quotation',
+      };
+    }
+  }
+
+  // Get booking history (alias for getAllQuotations with pagination)
+  static async getBookingHistory(page = 1, limit = 10): Promise<ApiResponse<unknown>> {
+    try {
+      const response = await apiClient.get(`/quotation/get-all-quotations?page=${page}&limit=${limit}`);
+      return {
+        success: true,
+        data: response.data,
+        message: 'Booking history retrieved successfully',
       };
     } catch (error) {
       console.error('Error fetching booking history:', error);

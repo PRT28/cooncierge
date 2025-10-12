@@ -2,7 +2,8 @@
 
 import dynamic from "next/dynamic";
 import React, { useState, useMemo, useCallback } from "react";
-import axios from "axios";
+import apiClient from "@/services/apiClient";
+import { getAuthToken } from "@/services/storage/authStorage";
 import { getRandomBgTextClass, getRandomDarkBgClass } from "@/utils/helper";
 import { useCalendar } from "@/context/CalendarContext";
 import { BookingProvider, useBooking } from "@/context/BookingContext";
@@ -89,20 +90,15 @@ const DashboardContent: React.FC = () => {
     setError(null);
 
     try {
-      const token =
-        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const token = getAuthToken();
 
       if (!token) {
         throw new Error("No authentication token found");
       }
 
-      const response = await axios.get<SummaryData>(
-        "http://localhost:8080/logs/get-user-logs/689000000000000000000003",
+      const response = await apiClient.get<SummaryData>(
+        "/logs/get-user-logs/689000000000000000000003",
         {
-          headers: {
-            "Content-Type": "application/json",
-            authorization: token,
-          },
           timeout: 10000,
         }
       );

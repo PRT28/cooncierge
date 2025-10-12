@@ -7,13 +7,10 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import axios from "axios";
-import { AxiosError } from "axios";
+import type { AxiosError } from "axios";
+import { AuthApi, VerifyTwoFaRequest } from "@/services/authApi";
+import { getAuthUser, setAuthUser } from "@/services/storage/authStorage";
 import { useToast } from "./ToastContext";
-
-// API base URL from environment
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 interface User {
   id: string;
@@ -26,14 +23,14 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loginAgent: (
-    userData: Record<string, object>,
+    userData: Record<string, unknown>,
     setOtpSent: (v: boolean) => void
   ) => Promise<void>;
   loginSU: (
-    userData: Record<string, object>,
+    userData: Record<string, unknown>,
     setOtpSent: (v: boolean) => void
   ) => Promise<void>;
-  verifyOtp: (otpData: Record<string, object>) => Promise<void>;
+  verifyOtp: (otpData: VerifyTwoFaRequest) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -48,10 +45,6 @@ export const useAuth = () => {
   return context;
 };
 
-const headers = {
-  "Content-Type": "application/json",
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,9 +53,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Load user from localStorage only on client
   useEffect(() => {
     try {
-      const storedUser = localStorage.getItem("user");
+      const storedUser = getAuthUser<User>();
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        setUser(storedUser);
       }
     } catch (err) {
       console.error("Failed to load user from localStorage:", err);
@@ -74,78 +67,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Helper to send OTP requests
   const sendOtp = async (
     endpoint: string,
-    userData: Record<string, object>,
+    userData: Record<string, unknown>,
     setOtpSent: (v: boolean) => void
   ) => {
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/send-otp/${endpoint}`,
-        userData,
-        { headers }
-      );
-
-      if (response.data.success) {
-        showToast(`OTP sent successfully to ${endpoint}`, "success");
-        setOtpSent(true);
-      } else {
-        showToast("Failed to send OTP", "error");
-      }
+      await AuthApi.sendOtp({ audience: endpoint, payload: userData });
+      showToast(`OTP sent successfully to ${endpoint}`, "success");
+      setOtpSent(true);
     } catch (error: unknown) {
-        const err = error as AxiosError<{ message?: string }>;
-        showToast(
-            err.response?.data?.message || "Failed to send OTP",
-            "error"
-        );
-        console.error("Send OTP Error:", err.message);
-        throw err;
+      const err = error as AxiosError<{ message?: string }>;
+      showToast(err.response?.data?.message || "Failed to send OTP", "error");
+      console.error("Send OTP Error:", err.message);
+      throw err;
     }
   };
 
-  const loginAgent = (userData: Record<string, object>, setOtpSent: (v: boolean) => void) =>
+  const loginAgent = (
+    userData: Record<string, unknown>,
+    setOtpSent: (v: boolean) => void
+  ) =>
     sendOtp("agent", userData, setOtpSent);
 
-  const loginSU = (userData: Record<string, object>, setOtpSent: (v: boolean) => void) =>
+  const loginSU = (
+    userData: Record<string, unknown>,
+    setOtpSent: (v: boolean) => void
+  ) =>
     sendOtp("super-admin", userData, setOtpSent);
 
-  const verifyOtp = async (otpData: Record<string, object>) => {
+  const verifyOtp = async (otpData: VerifyTwoFaRequest) => {
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/verify-otp`,
-        otpData,
-        { headers }
-      );
-
-      if (response.data.success) {
-        showToast("Login successful", "success");
-        setUser(response.data.user);
-
-        // Persist in localStorage
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-        localStorage.setItem("token", response.data.token);
-      } else {
-        showToast("OTP verification failed", "error");
+      const response = await AuthApi.verifyTwoFa(otpData);
+      if (response.user) {
+        setAuthUser(response.user);
+        setUser(response.user as User);
       }
+      showToast("Login successful", "success");
     } catch (error: unknown) {
-        const err = error as AxiosError<{ message?: string }>;
-        showToast(
-            err.response?.data?.message || "OTP verification failed",
-            "error"
-        );
-        setUser(null);
-        console.error("OTP Verification Error:", err.message);
-        throw error;
+      const err = error as AxiosError<{ message?: string }>;
+      showToast(err.response?.data?.message || "OTP verification failed", "error");
+      setUser(null);
+      console.error("OTP Verification Error:", err.message);
+      throw error;
     }
   };
 
   const logout = () => {
-    try {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      setUser(null);
-      showToast("Logged out successfully", "success");
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
+    AuthApi.logout()
+      .catch((error) => {
+        console.error("Logout error:", error);
+      })
+      .finally(() => {
+        setUser(null);
+        showToast("Logged out successfully", "success");
+      });
   };
 
   const value: AuthContextType = {

@@ -2,9 +2,13 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { IoMdArrowBack } from "react-icons/io";
+import type { AxiosError } from "axios";
+import { AuthApi } from "@/services/authApi";
 
 export default function SignIn() {
+  const router = useRouter();
   const [mode, setMode] = useState<"signin" | "otp" | "forgot">("signin");
   const [success, setSuccess] = useState(false);
 
@@ -12,6 +16,16 @@ export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(
+    "Please enter your Email and Password to Sign In"
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOtpSubmitting, setIsOtpSubmitting] = useState(false);
+  
+  const [otpMessage, setOtpMessage] = useState<
+    { text: string; tone: "error" | "info" }
+    | null
+  >(null);
 
   useEffect(() => {
     if (showError) {
@@ -48,23 +62,88 @@ export default function SignIn() {
   }, []);
 
   const handleSignIn = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       if (!email || !password) {
         setShowError(true);
+        setErrorMessage("Please enter your Email and Password to Sign In");
         return;
       }
       setShowError(false);
-      setMode("otp");
+      setIsSubmitting(true);
+      setOtpMessage(null);
+
+      try {
+        console.log('inside try');
+        const response = await AuthApi.login({ email, password });
+
+        setOtp(["", "", "", "", "", ""]);
+        setMode("otp");
+      } catch (error: unknown) {
+        const err = error as AxiosError<{ message?: string }>;
+        setErrorMessage(err.response?.data?.message || err.message || "Login failed");
+        setShowError(true);
+      } finally {
+        setIsSubmitting(false);
+      }
     },
-    [email, password]
+    [email, password, router]
   );
 
-  const handleSuccess = useCallback(async (): Promise<void> => {
-    // fake API call
-    await new Promise((res) => setTimeout(res, 1000));
-    setSuccess(true);
-  }, []);
+  const handleOtpSubmit = useCallback(async () => {
+
+    const enteredOtp = otp.join("");
+    if (enteredOtp.length < otp.length) {
+      setOtpMessage({
+        text: "Please enter the complete OTP",
+        tone: "error",
+      });
+      return;
+    }
+
+    setIsOtpSubmitting(true);
+    setOtpMessage(null);
+
+    try {
+      await AuthApi.verifyTwoFa({
+        email,
+        twoFACode: enteredOtp,
+      });
+      await router.push("/dashboard");
+    } catch (error: unknown) {
+      const err = error as AxiosError<{ message?: string }>;
+      setOtpMessage({
+        text: err.response?.data?.message || err.message || "Invalid OTP",
+        tone: "error",
+      });
+    } finally {
+      setIsOtpSubmitting(false);
+    }
+  }, [otp, router]);
+
+  const handlePasswordReset = useCallback(async (): Promise<void> => {
+    if (!email) {
+      setOtpMessage({
+        text: "Please enter your email address",
+        tone: "error",
+      });
+      return;
+    }
+
+    try {
+      await AuthApi.requestPasswordReset({ email });
+      setSuccess(true);
+    } catch (error: unknown) {
+      const err = error as AxiosError<{ message?: string }>;
+      setOtpMessage({
+        text:
+          err.response?.data?.message ||
+          err.message ||
+          "Password reset failed",
+        tone: "error",
+      });
+    }
+  }, [email]);
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#E8F5F1] flex items-center justify-center">
@@ -94,9 +173,7 @@ export default function SignIn() {
               />
             </svg>
             <span className="font-semibold">Error :</span>
-            <span className="ml-2">
-              Please enter your Email and Password to Sign In
-            </span>
+            <span className="ml-2">{errorMessage}</span>
           </div>
           <button
             type="button"
@@ -287,11 +364,10 @@ export default function SignIn() {
 
               <button
                 type="submit"
-                className="w-full h-13 bg-green-900 text-white py-2 rounded-md font-medium hover:bg-green-800  transition"
+                className="w-full h-13 bg-green-900 text-white py-2 rounded-md font-medium hover:bg-green-800 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={isSubmitting}
               >
-                <span className="transition text-medium duration-700 hover:text-lg">
-                  Sign In
-                </span>
+                {isSubmitting ? "Signing In..." : "Sign In"}
               </button>
             </form>
           </>
@@ -300,7 +376,10 @@ export default function SignIn() {
           <>
             <h2 className="text-xl font-bold text-center mb-6 text-black">
               <button
-                onClick={() => setMode("signin")}
+                onClick={() => {
+                  setMode("signin");
+                  setOtpMessage(null);
+                }}
                 className="float-left p-1 rounded-full hover:bg-gray-200 transition-colors"
               >
                 <IoMdArrowBack size={20} />
@@ -323,22 +402,32 @@ export default function SignIn() {
             <p className="text-sm text-center text-blue-600 mb-4">
               OTP has been sent to your email.
             </p>
+            {otpMessage && (
+              <p
+                className={`text-sm text-center mb-4 ${
+                  otpMessage.tone === "error"
+                    ? "text-red-600"
+                    : "text-green-600"
+                }`}
+              >
+                {otpMessage.text}
+              </p>
+            )}
             <button
-              onClick={() => alert("OTP Submitted: " + otp.join(""))}
-              className="w-full h-13 bg-green-900 text-white py-2 rounded-md font-medium hover:bg-green-800 transition"
+              onClick={handleOtpSubmit}
+              className="w-full h-13 bg-green-900 text-white py-2 rounded-md font-medium hover:bg-green-800 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={isOtpSubmitting}
             >
-              <span className="transition text-medium duration-700 hover:text-lg">
-                Verify OTP
-              </span>
+              {isOtpSubmitting ? "Verifying..." : "Verify OTP"}
             </button>
-            <div className="flex justify-end mt-4">
+            {/* <div className="flex justify-end mt-4">
               <button
                 type="button"
                 className="text-blue-400 px-2 py-1 underline text-sm hover:text-blue-700"
               >
                 Resend OTP
               </button>
-            </div>
+            </div> */}
           </>
         )}
 
@@ -348,7 +437,10 @@ export default function SignIn() {
               <div className="space-y-4">
                 <h2 className="text-xl font-bold text-center mb-6 text-black">
                   <button
-                    onClick={() => setMode("signin")}
+                    onClick={() => {
+                      setMode("signin");
+                      setOtpMessage(null);
+                    }}
                     className="float-left p-1 rounded-full hover:bg-gray-200 transition-colors"
                   >
                     <IoMdArrowBack size={20} />
@@ -359,7 +451,7 @@ export default function SignIn() {
                   className="space-y-4"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    handleSuccess();
+                    handlePasswordReset();
                   }}
                 >
                   <div>
@@ -376,10 +468,21 @@ export default function SignIn() {
                     Don&apos;t worry! Just enter your email and we&apos;ll
                     notify your admin to reset your password.
                   </p>
+                  {otpMessage && (
+                    <p
+                      className={`text-sm text-center mb-2 ${
+                        otpMessage.tone === "error"
+                          ? "text-red-600"
+                          : "text-green-600"
+                      }`}
+                    >
+                      {otpMessage.text}
+                    </p>
+                  )}
                   <div className="flex justify-end">
                     <button
                       type="submit"
-                      className="w-full h-13 bg-green-900 text-white py-2 rounded-md font-medium hover:bg-green-800  transition"
+                      className="w-full h-13 bg-green-900 text-white py-2 rounded-md font-medium hover:bg-green-800 transition"
                     >
                       <span className="transition text-medium duration-700 hover:text-lg">
                         Send Reset Link

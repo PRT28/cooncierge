@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import axios from "axios";
+import apiClient from "@/services/apiClient";
+import { getAuthToken } from "@/services/storage/authStorage";
 
 // Type definitions
 interface CalendarProps {
@@ -109,20 +110,17 @@ const Calendar: React.FC<CalendarProps> = ({ calenderShow, setCalenderShow }) =>
     setError(null);
 
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+      const token = getAuthToken();
 
       if (!token) {
         throw new Error("No authentication token found");
       }
 
-      const response = await axios.get<ApiResponse>(
-        `http://localhost:8080/logs/monthly-summary/689000000000000000000003?month=${month}&year=${year}`,
+      const response = await apiClient.get<ApiResponse>(
+        `/logs/monthly-summary/689000000000000000000003`,
         {
-          headers: {
-            "Content-Type": "application/json",
-            authorization: token,
-          },
-          timeout: 10000, // 10 second timeout
+          params: { month, year },
+          timeout: 10000,
         }
       );
 

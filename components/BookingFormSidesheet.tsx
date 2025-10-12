@@ -120,7 +120,13 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
           ...data,
           service: selectedService,
         };
+
+        // Use BookingContext to submit the booking
+        await submitBooking();
+
+        // Also call the optional onFormSubmit prop for backward compatibility
         await onFormSubmit?.(completeFormData);
+
         onClose();
       } catch (error) {
         console.error("Form submission error:", error);
@@ -128,7 +134,7 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
         setIsSubmitting(false);
       }
     },
-    [formData, selectedService, onFormSubmit, onClose]
+    [formData, selectedService, submitBooking, onFormSubmit, onClose]
   );
 
   // Memoized tab buttons
@@ -261,13 +267,31 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
                     Next
                   </button>
                 ) : (
-                  <button
-                    onClick={() => handleFormSubmit(formData)}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                    disabled={isSubmitting || !selectedService}
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit Booking"}
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={async () => {
+                        try {
+                          const draftName = `${selectedService?.title || 'Booking'} - ${formData?.generalInfo?.customer || 'Draft'}`;
+                          await saveDraft(draftName);
+                          // Show success message or close
+                          onClose();
+                        } catch (error) {
+                          console.error('Error saving draft:', error);
+                        }
+                      }}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                      disabled={isSubmitting}
+                    >
+                      Save Draft
+                    </button>
+                    <button
+                      onClick={() => handleFormSubmit(formData)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                      disabled={isSubmitting || !selectedService}
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit Booking"}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -284,8 +308,14 @@ const BookingFormSidesheetContent: React.FC<BookingFormSidesheetProps> = ({
           setIsConfirmModalOpen(false);
           onClose();
         }}
-        onSaveAsDrafts={() => {
-          setIsSuccessModalOpen(true);
+        onSaveAsDrafts={async () => {
+          try {
+            const draftName = `${selectedService?.title || 'Booking'} - ${formData?.generalInfo?.customer || 'Draft'}`;
+            await saveDraft(draftName);
+            setIsSuccessModalOpen(true);
+          } catch (error) {
+            console.error('Error saving draft:', error);
+          }
         }}
       />
 
