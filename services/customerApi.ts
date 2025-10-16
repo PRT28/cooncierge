@@ -2,7 +2,7 @@ import apiClient from "@/services/apiClient";
 
 export const createCustomer = async (customerData: any) => {
   try {
-    const response = await apiClient.post("/create-customer", customerData);
+    const response = await apiClient.post("/customer/create-customer", customerData);
     return response.data;
   } catch (error: any) {
     console.error("Failed to create customer:", error);
@@ -12,7 +12,7 @@ export const createCustomer = async (customerData: any) => {
 
 export const getCustomers = async () => {
   try {
-    const response = await apiClient.get("/get-all-customers");
+    const response = await apiClient.get("/customer/get-all-customers");
     return response.data;
   } catch (error: any) {
     console.error("Failed to fetch customers:", error);
