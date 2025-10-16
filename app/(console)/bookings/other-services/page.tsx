@@ -218,21 +218,7 @@ const OSBookingsPage = () => {
       setIsLoading(true);
       setError(null);
 
-      // Get user info for party-specific quotations
-      const user = getAuthUser<Record<string, unknown>>() || {};
-      const partyId =
-        (user && typeof user === "object" && "_id" in user
-          ? (user as { _id?: string })._id
-          : "") || "";
-
-      let response;
-      if (partyId) {
-        // Get quotations for specific party
-        response = await BookingApiService.getQuotationsByParty(partyId);
-      } else {
-        // Get all quotations if no specific party
-        response = await BookingApiService.getAllQuotations();
-      }
+      const response = await BookingApiService.getAllQuotations();
 
       if (response.success && response.data) {
         setQuotations(response.data?.quotations || response.data);
