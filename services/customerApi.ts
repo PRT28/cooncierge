@@ -13,7 +13,7 @@ export const createCustomer = async (customerData: any) => {
 export const getCustomers = async () => {
   try {
     const response = await apiClient.get("/customer/get-all-customers");
-    return response.data;
+    return response.data.customers;
   } catch (error: any) {
     console.error("Failed to fetch customers:", error);
     throw error.response?.data || { message: "Something went wrong" };

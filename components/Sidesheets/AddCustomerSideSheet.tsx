@@ -49,6 +49,7 @@ const AddCustomerSideSheet: React.FC<AddCustomerSideSheetProps> = ({
         name,
         email,
         phone: `${phoneCode}${phone}`,
+        ownerId: "507f1f77bcf86cd799439012", // Replace with actual ownerId
       };
 
       const response = await createCustomer(customerData);

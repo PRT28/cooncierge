@@ -470,14 +470,6 @@ const OSBookingsPage = () => {
             🔄 Sync
           </button>
         </div>
-
-        <button
-          onClick={() => setIsCreateOpen(true)}
-          className="bg-[#0D4B37] text-white px-6 py-2 rounded-lg shadow hover:bg-[#14505e] transition"
-          type="button"
-        >
-          Create +
-        </button>
       </div>
 
       <div className="min-h-screen mt-2">
@@ -499,6 +491,8 @@ const OSBookingsPage = () => {
           serviceTypes={filterOptions.serviceTypes}
           statuses={filterOptions.statuses}
           owners={filterOptions.owners}
+          createOpen={isCreateOpen}
+          setCreateOpen={setIsCreateOpen}
         />
 
         {isLoading ? (

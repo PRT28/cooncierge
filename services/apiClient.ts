@@ -13,9 +13,8 @@ apiClient.interceptors.request.use((config) => {
   const token = getAuthToken();
 
   if (token) {
-    const bearerToken = token.startsWith("Bearer") ? token : `Bearer ${token}`;
     config.headers = config.headers ?? {};
-    config.headers['x-access-token'] = bearerToken;
+    config.headers['x-access-token'] = token;
   }
 
   return config;
