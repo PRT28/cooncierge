@@ -30,6 +30,8 @@ interface FilterProps {
   statuses?: FilterOption[];
   owners?: FilterOption[];
   initialFilters?: Partial<FilterState>;
+  createOpen?: boolean;
+  setCreateOpen?: (open: boolean) => void;
 }
 
 const Filter: React.FC<FilterProps> = ({
@@ -38,6 +40,8 @@ const Filter: React.FC<FilterProps> = ({
   statuses = [],
   owners = [],
   initialFilters = {},
+  createOpen = false,
+  setCreateOpen,
 }) => {
   // Consolidated filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -117,8 +121,15 @@ const Filter: React.FC<FilterProps> = ({
   );
 
   return (
-    <div className="bg-white rounded-2xl shadow p-5 mb-5 w-full">
-      <h2 className="text-xl font-bold mb-4 text-left">Filters</h2>
+    <div className="bg-white rounded-2xl shadow p-5 mb-5 -mt-4 w-full relative">
+      <h2 className="text-lg font-bold mb-4 text-left">Filters</h2>
+      <button
+        onClick={() => setCreateOpen?.(true)}
+        className="absolute top-5 right-5 border border-[#0D4B37] bg-white text-[#0D4B37] px-6 py-2 -mt-2 rounded-lg shadow hover:bg-gray-200 transition"
+        type="button"
+      >
+        Create +
+      </button>
       <hr className="mb-3 border-t-2 border-[#e4dfdb]" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -274,7 +285,7 @@ const Filter: React.FC<FilterProps> = ({
         </button>
         <button
           onClick={handleApply}
-          className="bg-[#0D4B37] text-white px-8 py-2 rounded-lg shadow hover:bg-[#14505e] transition-colors"
+          className="bg-white text-[#0D4B37] px-8 py-2 rounded-lg shadow hover:bg-gray-200 transition-colors"
         >
           Apply
         </button>

@@ -87,16 +87,22 @@ const CustomerDirectory = () => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const data = await getCustomers();
+        const customers = await getCustomers();
+        console.log("Fetched customers:", customers);
 
-        const mappedRows: CustomerRow[] = data.map((c: any, index: number) => ({
-          customerID: c._id || `#C00${index + 1}`,
-          name: c.name,
-          owner: c.ownerId || "—",
-          rating: "⭐️⭐️⭐️⭐️",
-          dateCreated: new Date(c.createdAt).toLocaleDateString(),
-          actions: "⋮",
-        }));
+        const mappedRows: CustomerRow[] = customers.map(
+          (c: any, index: number) => ({
+            customerID: c._id || `#C00${index + 1}`,
+            name: c.name,
+            owner:
+              typeof c.ownerId === "object" && c.ownerId !== null
+                ? c.ownerId.name
+                : c.ownerId || "—",
+            rating: "⭐️⭐️⭐️⭐️",
+            dateCreated: new Date(c.createdAt).toLocaleDateString(),
+            actions: "⋮",
+          })
+        );
         setCustomers(mappedRows);
       } catch (err) {
         console.error("Failed to fetch customers:", err);
